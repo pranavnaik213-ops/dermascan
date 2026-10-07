@@ -20,7 +20,7 @@ export default function RoleSwitcher({ currentRole, onRoleChange }) {
     }}>
       <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></span>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: 'var(--primary)' }}></span>
           <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>ROLE PERSPECTIVE:</span>
           <span style={{ color: 'var(--text-muted)' }}>Switch system view & layout:</span>
         </div>
@@ -38,8 +38,8 @@ export default function RoleSwitcher({ currentRole, onRoleChange }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '16px',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
                   fontSize: '0.775rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -47,8 +47,8 @@ export default function RoleSwitcher({ currentRole, onRoleChange }) {
                   transition: 'all 0.2s ease',
                   background: active ? 'var(--primary)' : 'var(--bg-card)',
                   color: active ? '#ffffff' : 'var(--text-muted)',
-                  border: active ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
-                  boxShadow: active ? '0 2px 8px rgba(5, 150, 105, 0.3)' : 'none'
+                  border: active ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                  boxShadow: active ? '0 2px 6px rgba(5, 150, 105, 0.25)' : 'none'
                 }}
               >
                 <Icon size={13} />

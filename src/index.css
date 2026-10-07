@@ -160,14 +160,9 @@ main.app-container > div {
 }
 
 /* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-}
-
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 15px rgba(5, 150, 105, 0.2); }
-  50% { box-shadow: 0 0 28px rgba(5, 150, 105, 0.45); }
+  0%, 100% { box-shadow: 0 0 12px rgba(5, 150, 105, 0.15); }
+  50% { box-shadow: 0 0 20px rgba(5, 150, 105, 0.3); }
 }
 
 @keyframes laserScan {
@@ -177,13 +172,9 @@ main.app-container > div {
 }
 
 @keyframes beaconPulse {
-  0% { transform: scale(0.95); opacity: 0.9; }
-  50% { transform: scale(1.15); opacity: 0.4; }
-  100% { transform: scale(0.95); opacity: 0.9; }
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+  0% { opacity: 0.9; }
+  50% { opacity: 0.5; }
+  100% { opacity: 0.9; }
 }
 
 .animate-pulse-glow {
@@ -234,23 +225,24 @@ main.app-container > div {
 }
 
 .interactive-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--primary);
-  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 0 16px var(--primary-glow);
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 0 12px var(--primary-glow);
 }
 
-/* Badges */
+/* Badges (Strictly rectangular / subtle 6px rounded, NO pill shapes) */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
-  border-radius: 20px;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
+
 
 .badge-emergency {
   background: var(--emergency-bg);

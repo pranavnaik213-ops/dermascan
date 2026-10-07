@@ -240,7 +240,7 @@ export const PRESET_DETECTION_SAMPLES = [
     title: "Blurry / Dark Image (Quality Failure)",
     animalType: "Dog",
     photoUrl: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=800&q=80&blur=10",
-    qualityCheck: { passed: false, brightness: 34, sharpness: 28, visibility: 40, message: "⚠️ Low Image Quality: Obstructed area or motion blur detected." },
+    qualityCheck: { passed: false, brightness: 34, sharpness: 28, visibility: 40, message: "Low Image Quality: Obstructed area or motion blur detected." },
     prediction: "Unknown / Low Confidence",
     confidence: 42,
     severity: "Unknown",

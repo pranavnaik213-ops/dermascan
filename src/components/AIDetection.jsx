@@ -84,7 +84,7 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
             ? "Optimal Image Quality (Real Canvas Scan Verified)" 
             : "⚠️ Low Image Quality: Low contrast or lighting anomaly detected."
         });
-      } catch (err) {
+      } catch {
         callback({ passed: true, brightness: 84, sharpness: 88, visibility: 90, message: "Optimal Image Quality" });
       }
     };
@@ -400,8 +400,8 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
                   key={type}
                   onClick={() => setSelectedAnimal(type)}
                   style={{
-                    padding: '10px',
-                    borderRadius: '8px',
+                    padding: '9px',
+                    borderRadius: '6px',
                     fontWeight: 700,
                     fontSize: '0.85rem',
                     background: selectedAnimal === type ? 'var(--primary)' : 'var(--bg-main)',
@@ -410,7 +410,7 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  {type === 'Dog' ? '🐕 Dog' : type === 'Cat' ? '🐈 Cat' : '🐾 Other'}
+                  {type}
                 </button>
               ))}
             </div>
@@ -552,7 +552,7 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
           {showGradCam && (
             <div>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>
-                🔍 DUAL-LAYER GRAD-CAM HEATMAP SLIDER (Drag slider to inspect visual feature attention)
+                DUAL-LAYER GRAD-CAM HEATMAP SLIDER (Drag slider to inspect visual feature attention)
               </div>
               <ImageSlider 
                 beforeImage={uploadedImage} 

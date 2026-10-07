@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { 
   CheckCircle2, 
   Heart,
-  Share2,
-  QrCode
+  Share2
 } from 'lucide-react';
 import ImageSlider from './ImageSlider';
 import PrescriptionCard from './PrescriptionCard';
@@ -24,7 +23,7 @@ export default function CasesTracker({ cases, currentRole, onUpdateStatus }) {
 
   const getWhatsAppShareUrl = (c) => {
     const text = encodeURIComponent(
-      `🚨 *DERMASCAN CASE UPDATE*\n*Case ID:* ${c.id}\n*Animal:* ${c.animalType}\n*Status:* ${c.status.replace('_', ' ').toUpperCase()}\n*Assessment:* ${c.aiPrediction} (${c.aiConfidence}%)\n*Location:* ${c.locationName}`
+      `*DERMASCAN CASE UPDATE*\n*Case ID:* ${c.id}\n*Animal:* ${c.animalType}\n*Status:* ${c.status.replace('_', ' ').toUpperCase()}\n*Assessment:* ${c.aiPrediction} (${c.aiConfidence}%)\n*Location:* ${c.locationName}`
     );
     return `https://api.whatsapp.com/send?text=${text}`;
   };
@@ -126,7 +125,7 @@ export default function CasesTracker({ cases, currentRole, onUpdateStatus }) {
                     </div>
 
                     <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                      📍 {c.locationName}
+                      Location: {c.locationName}
                     </div>
                   </div>
                 </div>
@@ -266,7 +265,7 @@ export default function CasesTracker({ cases, currentRole, onUpdateStatus }) {
                   beforeImage={activeCase.photoUrl} 
                   afterImage={activeCase.afterPhotoUrl} 
                   beforeLabel="Day 1: Before Rescue"
-                  afterLabel="Day 28: Fully Recovered ❤️"
+                  afterLabel="Day 28: Fully Recovered"
                 />
               </div>
             )}

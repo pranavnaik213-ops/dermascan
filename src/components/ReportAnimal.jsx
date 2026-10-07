@@ -52,7 +52,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
 
   const getWhatsAppShareUrl = (c) => {
     const text = encodeURIComponent(
-      `🚨 *DERMASCAN RESCUE REPORT*\n*Case ID:* ${c.id}\n*Animal:* ${c.animalType}\n*Priority:* ${c.priorityScore}/100 (${c.urgency})\n*Assessment:* ${c.aiPrediction} (${c.aiConfidence}%)\n*Location:* ${c.locationName}\n*Symptoms:* ${c.symptoms.join(', ')}\n\nDispatch coordinates: Lat ${c.coordinates.lat}, Lng ${c.coordinates.lng}`
+      `*DERMASCAN RESCUE REPORT*\n*Case ID:* ${c.id}\n*Animal:* ${c.animalType}\n*Priority:* ${c.priorityScore}/100 (${c.urgency})\n*Assessment:* ${c.aiPrediction} (${c.aiConfidence}%)\n*Location:* ${c.locationName}\n*Symptoms:* ${c.symptoms.join(', ')}\n\nDispatch coordinates: Lat ${c.coordinates.lat}, Lng ${c.coordinates.lng}`
     );
     return `https://api.whatsapp.com/send?text=${text}`;
   };
@@ -346,11 +346,11 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
                   outline: 'none'
                 }}
               >
-                <option value="Dog">🐕 Dog</option>
-                <option value="Cat">🐈 Cat</option>
-                <option value="Cattle">🐄 Cattle / Cow</option>
-                <option value="Wildlife">🐿️ Wildlife</option>
-                <option value="Other">🐾 Other</option>
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+                <option value="Cattle">Cattle / Cow</option>
+                <option value="Wildlife">Wildlife</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
@@ -551,7 +551,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
                 }}
               >
                 <Mic size={13} className={isListening ? 'animate-beacon' : ''} />
-                <span>{isListening ? 'Listening Voice Note...' : '🎤 Hands-Free Voice Reporter'}</span>
+                <span>{isListening ? 'Listening Voice Note...' : 'Hands-Free Voice Reporter'}</span>
               </button>
             </div>
 

@@ -32,18 +32,14 @@ const createNgoIcon = () => {
     className: 'custom-ngo-marker',
     html: `<div style="
       background-color: #0284c7;
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
       border: 2px solid #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
       box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-    ">🏥</div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
+    "></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
   });
 };
 
@@ -109,7 +105,7 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole }) {
                 color: viewMode === 'pins' ? '#ffffff' : 'var(--text-muted)'
               }}
             >
-              📍 Case Markers
+              Case Markers
             </button>
 
             <button
@@ -185,7 +181,7 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole }) {
                   <div style={{ textAlign: 'left', minWidth: '160px' }}>
                     <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>{c.id}</div>
                     <div style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-main)' }}>{c.aiPrediction}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📍 {c.locationName}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Location: {c.locationName}</div>
                     <div style={{ fontSize: '0.725rem', marginTop: '4px', fontWeight: 600, color: getMarkerColor(c) }}>
                       {c.urgency} Priority • Score: {c.priorityScore}/100
                     </div>
@@ -203,9 +199,9 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole }) {
               >
                 <Popup>
                   <div style={{ minWidth: '160px' }}>
-                    <div style={{ fontWeight: 800, color: 'var(--secondary)' }}>🏥 {ngo.name}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--secondary)' }}>{ngo.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Verified Rescue Org</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '4px' }}>📞 {ngo.phone}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '4px' }}>Phone: {ngo.phone}</div>
                   </div>
                 </Popup>
               </Marker>
@@ -269,7 +265,8 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole }) {
               <span>Recovered</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>🏥 NGO</span>
+              <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#0284c7' }}></span>
+              <span>NGO Center</span>
             </div>
           </div>
         </div>
@@ -298,7 +295,7 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole }) {
                     {selectedCase.aiPrediction}
                   </div>
                   <div style={{ fontSize: '0.825rem', color: 'var(--primary)' }}>
-                    📍 {selectedCase.locationName}
+                    Location: {selectedCase.locationName}
                   </div>
                 </div>
               </div>

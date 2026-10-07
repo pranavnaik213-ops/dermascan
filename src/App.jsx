@@ -10,8 +10,11 @@ import Awareness from './components/Awareness';
 import AdminAnalytics from './components/AdminAnalytics';
 import NotificationDrawer from './components/NotificationDrawer';
 import Footer from './components/Footer';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
 
 import { INITIAL_CASES } from './data/mockData';
+import { ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -26,14 +29,14 @@ export default function App() {
   const [notifications, setNotifications] = useState([
     {
       id: 1,
-      title: '🚨 Emergency SOS Reported',
+      title: 'Emergency SOS Reported',
       message: 'Severe bleeding wound stray reported in Kengeri Satellite Town (Priority 96/100)',
       time: '10m ago',
       type: 'emergency'
     },
     {
       id: 2,
-      title: '✅ Case Accepted',
+      title: 'Case Accepted',
       message: 'ABC Animal Rescue accepted Case DS-2026-00124 (Canine Mange)',
       time: '45m ago',
       type: 'info'
@@ -63,7 +66,7 @@ export default function App() {
     // Add real-time notification
     const newNotif = {
       id: Date.now(),
-      title: newCase.urgency === 'Emergency' ? '🚨 Emergency SOS Created' : '📋 New Case Generated',
+      title: newCase.urgency === 'Emergency' ? 'Emergency SOS Created' : 'New Case Generated',
       message: `Case ${newCase.id} created for ${newCase.animalType} in ${newCase.locationName}`,
       time: 'Just now',
       type: newCase.urgency === 'Emergency' ? 'emergency' : 'info'
@@ -95,7 +98,7 @@ export default function App() {
     setNotifications(prev => [
       {
         id: Date.now(),
-        title: '🏥 Case Accepted',
+        title: 'Case Accepted',
         message: `${ngoName} accepted ${caseId}. Volunteer ${volunteerName} assigned.`,
         time: 'Just now',
         type: 'info'
@@ -164,17 +167,17 @@ export default function App() {
           zIndex: 9999,
           background: 'var(--primary)',
           color: '#ffffff',
-          padding: '12px 20px',
-          borderRadius: '10px',
+          padding: '10px 18px',
+          borderRadius: '6px',
           boxShadow: 'var(--shadow-lg)',
           fontWeight: 700,
-          fontSize: '0.875rem',
+          fontSize: '0.85rem',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
           animation: 'pageFadeIn 0.3s ease-out forwards'
         }}>
-          <span>✨</span>
+          <ShieldCheck size={16} />
           <span>{toastBanner}</span>
         </div>
       )}
@@ -249,6 +252,14 @@ export default function App() {
 
         {activeTab === 'analytics' && (
           <AdminAnalytics cases={cases} />
+        )}
+
+        {activeTab === 'privacy' && (
+          <PrivacyPolicy setActiveTab={setActiveTab} />
+        )}
+
+        {activeTab === 'terms' && (
+          <TermsAndConditions setActiveTab={setActiveTab} />
         )}
 
       </main>

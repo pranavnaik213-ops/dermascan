@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stethoscope, Printer, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Stethoscope, Printer } from 'lucide-react';
 
 export default function PrescriptionCard({ selectedCase }) {
   const [weightKg, setWeightKg] = useState(12);

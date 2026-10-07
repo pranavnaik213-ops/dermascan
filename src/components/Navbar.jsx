@@ -11,7 +11,8 @@ import {
   AlertTriangle, 
   FileText, 
   Menu,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -50,36 +51,35 @@ export default function Navbar({
     }}>
       <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 28px', gap: '16px' }}>
         
-        {/* Brand Logo */}
+        {/* Brand Logo & Custom Domain */}
         <div 
           onClick={() => setActiveTab('home')}
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}
         >
           <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
             background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.2rem',
             boxShadow: '0 4px 12px var(--primary-glow)'
           }}>
-            🐾
+            <ShieldCheck size={20} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.025em', color: 'var(--text-main)' }}>
               DERMA<span className="gradient-text">SCAN</span>
             </span>
-            <span className="badge badge-low" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
-              v1.2 AI
+            <span className="badge badge-low" style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px' }}>
+              dermascan.org
             </span>
           </div>
         </div>
 
-        {/* Desktop Nav Items */}
+        {/* Desktop Nav Items (No Pill Shapes) */}
         <div style={{ display: 'none', gap: '4px', alignItems: 'center' }} className="desktop-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -92,20 +92,19 @@ export default function Navbar({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '20px',
+                  padding: '7px 12px',
+                  borderRadius: '6px',
                   fontSize: '0.85rem',
                   fontWeight: isActive ? 800 : 600,
                   whiteSpace: 'nowrap',
-                  transition: 'all 0.22s ease',
+                  transition: 'all 0.2s ease',
                   background: isActive 
                     ? 'var(--primary-light)' 
                     : 'transparent',
                   color: isActive ? 'var(--primary)' : 'var(--text-muted)',
                   border: isActive 
-                    ? '1.5px solid var(--primary)' 
-                    : '1.5px solid transparent',
-                  boxShadow: isActive ? '0 2px 10px var(--primary-glow)' : 'none'
+                    ? '1px solid var(--primary)' 
+                    : '1px solid transparent'
                 }}
               >
                 <Icon size={15} color={isActive ? 'var(--primary)' : 'var(--text-muted)'} />
@@ -116,8 +115,8 @@ export default function Navbar({
                     color: '#ffffff',
                     fontSize: '0.675rem',
                     fontWeight: 800,
-                    borderRadius: '10px',
-                    padding: '2px 7px',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
                     marginLeft: '2px'
                   }}>
                     {item.count}
@@ -131,11 +130,11 @@ export default function Navbar({
         {/* Right Header Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           
-          {/* Emergency Quick Button */}
+          {/* Emergency Quick Button (Rectangular, 6px radius) */}
           <button 
             className="btn-danger"
             onClick={() => setActiveTab('report')}
-            style={{ padding: '7px 14px', fontSize: '0.775rem', borderRadius: '20px', whiteSpace: 'nowrap' }}
+            style={{ padding: '7px 14px', fontSize: '0.775rem', borderRadius: '6px', whiteSpace: 'nowrap' }}
           >
             <AlertTriangle size={14} className="animate-beacon" />
             <span>EMERGENCY REPORT</span>
@@ -146,9 +145,9 @@ export default function Navbar({
             onClick={() => setShowNotifications(prev => !prev)}
             style={{
               position: 'relative',
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '6px',
               background: 'var(--bg-main)',
               border: '1px solid var(--border-color)',
               display: 'flex',
@@ -158,7 +157,7 @@ export default function Navbar({
               cursor: 'pointer'
             }}
           >
-            <Bell size={18} />
+            <Bell size={17} />
             {unreadNotifications > 0 && (
               <span style={{
                 position: 'absolute',
@@ -181,13 +180,13 @@ export default function Navbar({
             )}
           </button>
 
-          {/* Language Selector */}
+          {/* Language Selector (No Emojis) */}
           <select
             value={lang || 'en'}
             onChange={(e) => setLang && setLang(e.target.value)}
             style={{
               padding: '6px 10px',
-              borderRadius: '10px',
+              borderRadius: '6px',
               background: 'var(--bg-main)',
               border: '1px solid var(--border-color)',
               color: 'var(--text-main)',
@@ -198,18 +197,18 @@ export default function Navbar({
             }}
             title="Switch Platform Language"
           >
-            <option value="en">🌐 English</option>
-            <option value="kn">🌐 ಕನ್ನಡ</option>
-            <option value="hi">🌐 हिन्दी</option>
+            <option value="en">English</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="hi">हिन्दी</option>
           </select>
 
           {/* Theme Switcher */}
           <button
             onClick={toggleTheme}
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '6px',
               background: 'var(--bg-main)',
               border: '1px solid var(--border-color)',
               display: 'flex',
@@ -220,7 +219,7 @@ export default function Navbar({
             }}
             title="Toggle Light/Dark Theme"
           >
-            {theme === 'dark' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#0284c7" />}
+            {theme === 'dark' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#0284c7" />}
           </button>
 
           {/* Mobile Menu Button */}
@@ -230,11 +229,11 @@ export default function Navbar({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '38px',
-              height: '38px',
+              width: '36px',
+              height: '36px',
               background: 'var(--bg-main)',
               border: '1px solid var(--border-color)',
-              borderRadius: '10px',
+              borderRadius: '6px',
               color: 'var(--text-main)'
             }}
             className="mobile-toggle"
@@ -269,7 +268,7 @@ export default function Navbar({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '10px 14px',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   background: isActive ? 'var(--primary-light)' : 'transparent',
                   color: isActive ? 'var(--primary)' : 'var(--text-main)',
                   fontWeight: isActive ? 700 : 500
@@ -285,6 +284,21 @@ export default function Navbar({
               </button>
             );
           })}
+          
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px', display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={() => { setActiveTab('privacy'); setMobileMenuOpen(false); }}
+              style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'transparent' }}
+            >
+              Privacy Policy
+            </button>
+            <button 
+              onClick={() => { setActiveTab('terms'); setMobileMenuOpen(false); }}
+              style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'transparent' }}
+            >
+              Terms & Conditions
+            </button>
+          </div>
         </div>
       )}
 

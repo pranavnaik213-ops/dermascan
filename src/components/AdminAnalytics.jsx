@@ -216,7 +216,7 @@ export default function AdminAnalytics({ cases = [] }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {dynamicAreaList.map((item, idx) => (
               <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-main)' }}>📍 {item.area}</span>
+                <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-main)' }}>{item.area}</span>
                 <span className="badge badge-low" style={{ fontSize: '0.75rem' }}>{item.count} cases</span>
               </div>
             ))}
