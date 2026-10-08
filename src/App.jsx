@@ -23,7 +23,19 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState('user'); // user, ngo, vet, admin
   const [cases, setCases] = useState(() => {
     const saved = localStorage.getItem('dermascan_cases');
-    return saved ? JSON.parse(saved) : INITIAL_CASES;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.some(c => c.id === 'DS-2026-00124')) {
+          localStorage.setItem('dermascan_cases', JSON.stringify([]));
+          return [];
+        }
+        return parsed;
+      } catch {
+        return [];
+      }
+    }
+    return INITIAL_CASES;
   });
 
   const [notifications, setNotifications] = useState([
@@ -243,6 +255,7 @@ export default function App() {
             cases={cases}
             currentRole={currentRole}
             onUpdateStatus={handleUpdateStatus}
+            setActiveTab={setActiveTab}
           />
         )}
 
