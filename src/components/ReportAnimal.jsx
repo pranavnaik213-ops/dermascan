@@ -8,8 +8,10 @@ import {
   Send,
   Mic,
   Share2,
-  QrCode
+  QrCode,
+  Image as ImageIcon
 } from 'lucide-react';
+import CameraCaptureModal from './CameraCaptureModal';
 
 export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResult }) {
   const [animalType, setAnimalType] = useState(initialScanResult?.animalType || 'Dog');
@@ -22,10 +24,11 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
   );
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState(
-    initialScanResult?.photoUrl || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80'
+    initialScanResult?.photoUrl || '/samples/dog_mange.jpg'
   );
   const [submittedCase, setSubmittedCase] = useState(null);
   const [isListening, setIsListening] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const startVoiceDictation = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -356,45 +359,74 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
 
           </div>
 
-          <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{ background: 'var(--bg-main)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <img 
               src={photoUrl} 
               alt="Report Preview" 
-              style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--primary)' }}
+              style={{ width: '76px', height: '76px', borderRadius: '10px', objectFit: 'cover', border: '2px solid var(--primary)', flexShrink: 0 }}
             />
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '3px' }}>
-                Attached Photograph Preview
-              </label>
-              <label style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 10px',
-                borderRadius: '6px',
-                background: 'var(--bg-card)',
-                color: 'var(--text-main)',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: '1px solid var(--border-color)'
-              }}>
-                <Camera size={13} color="var(--primary)" />
-                <span>Upload Different Photo</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => setPhotoUrl(ev.target.result);
-                      reader.readAsDataURL(file);
-                    }
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '2px' }}>
+                  Attached Animal Photograph
+                </label>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Take a new live photo or select an existing photo from gallery
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    background: 'var(--primary-light)',
+                    color: 'var(--primary)',
+                    border: '1px solid var(--primary)',
+                    fontSize: '0.775rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
                   }}
-                  style={{ display: 'none' }}
-                />
-              </label>
+                >
+                  <Camera size={14} />
+                  <span>Take Live Photo (Camera)</span>
+                </button>
+
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.775rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <ImageIcon size={14} color="var(--secondary)" />
+                  <span>Choose from Gallery</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setPhotoUrl(ev.target.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
 
@@ -584,6 +616,13 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialScanResul
 
         </form>
       )}
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(img) => setPhotoUrl(img)}
+      />
 
     </div>
   );

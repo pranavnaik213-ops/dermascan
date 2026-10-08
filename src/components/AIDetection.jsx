@@ -10,10 +10,13 @@ import {
   Info, 
   ShieldAlert,
   Cpu,
-  Sparkles
+  Sparkles,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { PRESET_DETECTION_SAMPLES } from '../data/mockData';
 import ImageSlider from './ImageSlider';
+import CameraCaptureModal from './CameraCaptureModal';
 
 export default function AIDetection({ setActiveTab, onScanComplete }) {
   const [selectedAnimal, setSelectedAnimal] = useState('Dog');
@@ -24,6 +27,7 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
   const [showResult, setShowResult] = useState(false);
   const [showGradCam, setShowGradCam] = useState(false);
   const [screeningId, setScreeningId] = useState('SCR-948102');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   // Handle preset sample pick
   const handleSelectSample = (sample) => {
@@ -91,7 +95,31 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
     img.src = dataUrl;
   };
 
-  // Handle custom image upload
+  // Handle live camera capture photo
+  const handleCameraCapture = (dataUrl) => {
+    setUploadedImage(dataUrl);
+    setShowResult(false);
+    setShowGradCam(false);
+
+    analyzeImagePixels(dataUrl, (realQuality) => {
+      const customSample = {
+        id: "camera-" + Date.now(),
+        title: "Live Camera Snapshot",
+        animalType: selectedAnimal,
+        photoUrl: dataUrl,
+        qualityCheck: realQuality,
+        prediction: "Canine Mange",
+        confidence: Math.round(86 + Math.random() * 9),
+        severity: "Moderate",
+        indicators: ["Epidermal Lesions", "Patchy Alopecia", "Inflammatory Redness"],
+        description: "Visual analysis of live camera photo indicates dermatological lesion features requiring clinical screening.",
+        urgency: "High"
+      };
+      setCurrentSample(customSample);
+    });
+  };
+
+  // Handle custom image upload from gallery
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -312,25 +340,65 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
                   Upload Animal Photograph
                 </div>
                 <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
-                  Drag & drop file or browse
+                  Take photo using camera or browse gallery
                 </div>
               </div>
             )}
+          </div>
 
-            <input 
-              type="file" 
-              accept="image/*"
-              onChange={handleImageUpload}
+          {/* Dual Input Action Bar: Camera & Gallery */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setIsCameraOpen(true)}
+              className="interactive-card"
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0,
-                cursor: 'pointer'
+                padding: '11px 14px',
+                borderRadius: '10px',
+                background: 'var(--primary-light)',
+                border: '1.5px solid var(--primary)',
+                color: 'var(--primary)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
               }}
-            />
+            >
+              <Camera size={18} />
+              <span>Take Photo (Camera)</span>
+            </button>
+
+            <label
+              className="interactive-card"
+              style={{
+                padding: '11px 14px',
+                borderRadius: '10px',
+                background: 'var(--bg-main)',
+                border: '1.5px solid var(--border-color)',
+                color: 'var(--text-main)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                textAlign: 'center'
+              }}
+            >
+              <ImageIcon size={18} color="var(--secondary)" />
+              <span>Choose Gallery</span>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
 
           {/* Image Quality Pre-check */}
@@ -674,6 +742,13 @@ export default function AIDetection({ setActiveTab, onScanComplete }) {
 
         </div>
       )}
+
+      {/* Live Camera Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
+      />
 
     </div>
   );

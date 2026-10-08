@@ -17,8 +17,8 @@ export const INITIAL_CASES = [
     assignedVolunteer: "Rahul Sharma",
     veterinaryNotes: "Clinical evaluation confirms Demodectic Mange. Initiated oral ivermectin therapy and weekly medicated baths.",
     veterinarianConfirmed: true,
-    photoUrl: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
-    gradCamUrl: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/dog_mange.jpg",
+    gradCamUrl: "/samples/dog_mange.jpg",
     afterPhotoUrl: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=80",
     timeline: [
       { step: "Report Created", date: "Oct 04, 14:30", done: true },
@@ -47,7 +47,7 @@ export const INITIAL_CASES = [
     assignedVolunteer: null,
     veterinaryNotes: null,
     veterinarianConfirmed: false,
-    photoUrl: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/dog_dermatitis.jpg",
     timeline: [
       { step: "Report Created", date: "Oct 04, 18:15", done: true },
       { step: "AI Screened (93% Infection)", date: "Oct 04, 18:16", done: true },
@@ -75,7 +75,7 @@ export const INITIAL_CASES = [
     assignedVolunteer: "Anand Patel",
     veterinaryNotes: "Confirmed Microsporum infection via fungal culture swab. Topically treating with antifungal spray.",
     veterinarianConfirmed: true,
-    photoUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/cat_ringworm.jpg",
     timeline: [
       { step: "Report Created", date: "Oct 03, 11:20", done: true },
       { step: "AI Screened (84% Fungal)", date: "Oct 03, 11:21", done: true },
@@ -103,7 +103,7 @@ export const INITIAL_CASES = [
     assignedVolunteer: "Dr. Ananya Rao",
     veterinaryNotes: "28-day treatment course completed successfully. Full hair regrowth observed and skin scrapings cleared.",
     veterinarianConfirmed: true,
-    photoUrl: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/dog_mange.jpg",
     afterPhotoUrl: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
     timeline: [
       { step: "Report Created", date: "Sep 10, 09:00", done: true },
@@ -132,7 +132,7 @@ export const INITIAL_CASES = [
     assignedVolunteer: null,
     veterinaryNotes: null,
     veterinarianConfirmed: false,
-    photoUrl: "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/dog_dermatitis.jpg",
     timeline: [
       { step: "Report Created", date: "Oct 04, 16:45", done: true },
       { step: "AI Screened (78% Dermatitis)", date: "Oct 04, 16:46", done: true },
@@ -200,7 +200,7 @@ export const PRESET_DETECTION_SAMPLES = [
     id: "sample-1",
     title: "Stray Dog with Mange",
     animalType: "Dog",
-    photoUrl: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/dog_mange.jpg",
     qualityCheck: { passed: true, brightness: 88, sharpness: 92, visibility: 95, message: "Optimal Image Quality" },
     prediction: "Canine Mange",
     confidence: 88,
@@ -213,7 +213,7 @@ export const PRESET_DETECTION_SAMPLES = [
     id: "sample-2",
     title: "Cat with Ringworm (Fungal)",
     animalType: "Cat",
-    photoUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80",
+    photoUrl: "/samples/cat_ringworm.jpg",
     qualityCheck: { passed: true, brightness: 82, sharpness: 89, visibility: 91, message: "Optimal Image Quality" },
     prediction: "Fungal Ringworm",
     confidence: 84,
@@ -224,6 +224,19 @@ export const PRESET_DETECTION_SAMPLES = [
   },
   {
     id: "sample-3",
+    title: "Dog with Allergic Dermatitis",
+    animalType: "Dog",
+    photoUrl: "/samples/dog_dermatitis.jpg",
+    qualityCheck: { passed: true, brightness: 90, sharpness: 94, visibility: 93, message: "Optimal Image Quality" },
+    prediction: "Allergic Dermatitis",
+    confidence: 91,
+    severity: "Moderate",
+    indicators: ["Ventral Red Erythema", "Excoriation Marks", "Flea Infestation Signs"],
+    description: "Allergic skin inflammation caused by flea bites or environmental contact allergens. Presents with localized redness and itching.",
+    urgency: "Medium"
+  },
+  {
+    id: "sample-4",
     title: "Healthy Stray Dog",
     animalType: "Dog",
     photoUrl: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
@@ -236,10 +249,10 @@ export const PRESET_DETECTION_SAMPLES = [
     urgency: "Low"
   },
   {
-    id: "sample-4",
+    id: "sample-5",
     title: "Blurry / Dark Image (Quality Failure)",
     animalType: "Dog",
-    photoUrl: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=800&q=80&blur=10",
+    photoUrl: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80&blur=10",
     qualityCheck: { passed: false, brightness: 34, sharpness: 28, visibility: 40, message: "Low Image Quality: Obstructed area or motion blur detected." },
     prediction: "Unknown / Low Confidence",
     confidence: 42,
