@@ -4,24 +4,11 @@ import {
   MapPin, 
   ShieldCheck, 
   CheckCircle2, 
-  ArrowRight, 
   Camera,
-  Cpu,
-  Users,
-  Award,
-  Activity
+  Cpu
 } from 'lucide-react';
 
-export default function Hero({ setActiveTab, cases = [] }) {
-  const activeDispatches = cases.filter(c => c.status !== 'ngo_pending').length;
-  const totalRecoveries = cases.filter(c => c.status === 'recovered').length;
-
-  const stats = [
-    { label: 'Total Tracked Cases', value: cases.length, icon: Activity, color: '#059669' },
-    { label: 'Dataset Benchmark Images', value: '4,280', icon: Cpu, color: '#0284c7' },
-    { label: 'Active NGO Dispatches', value: activeDispatches, icon: Users, color: '#ea580c' },
-    { label: 'Verified Full Recoveries', value: totalRecoveries, icon: Award, color: '#0f766e' }
-  ];
+export default function Hero({ setActiveTab }) {
 
   const workflowSteps = [
     {
@@ -220,69 +207,6 @@ export default function Hero({ setActiveTab, cases = [] }) {
         </div>
       </section>
 
-      {/* Real-world Metrics Section */}
-      <section>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <span className="badge badge-low" style={{ marginBottom: '6px' }}>
-            SYSTEM METRICS
-          </span>
-          <h2 style={{ fontSize: '1.65rem', color: 'var(--text-main)', fontWeight: 800 }}>
-            Operational & Dataset Statistics
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem' }}>
-            Verified dataset count and real-time community rescue records
-          </p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px'
-        }}>
-          {stats.map((stat, idx) => {
-            const Icon = stat.icon;
-            return (
-              <div key={idx} className="glass-panel interactive-card" style={{
-                padding: '20px 16px',
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-                borderRadius: '12px'
-              }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '8px',
-                  background: 'var(--primary-light)',
-                  color: stat.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: `1px solid ${stat.color}30`
-                }}>
-                  <Icon size={22} />
-                </div>
-                <div>
-                  <div style={{ 
-                    fontSize: '2rem', 
-                    fontWeight: 800, 
-                    fontFamily: 'var(--font-heading)',
-                    color: 'var(--text-main)'
-                  }}>
-                    {stat.value}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {stat.label}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* How DermaScan Works */}
       <section>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -345,99 +269,6 @@ export default function Hero({ setActiveTab, cases = [] }) {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* Recovery Spotlight */}
-      <section className="glass-panel" style={{
-        padding: '28px',
-        borderRadius: '16px',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-color)'
-      }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '24px',
-          alignItems: 'center'
-        }}>
-          <div>
-            <span className="badge badge-low" style={{ marginBottom: '10px' }}>CASE RECORD SPOTLIGHT</span>
-            <h2 style={{ fontSize: '1.65rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '10px' }}>
-              Bruno's Recovery Timeline
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem', lineHeight: 1.6, marginBottom: '16px' }}>
-              Reported in Rajajinagar with severe scab formation. Screened by DermaScan with 89% match, accepted by People For Animals (PFA Bengaluru), and treated with medicated baths over 28 days.
-            </p>
-
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '18px' }}>
-              <div>
-                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 700 }}>CASE ID</div>
-                <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>DS-2026-00127</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 700 }}>TREATMENT DURATION</div>
-                <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1rem' }}>28 Days</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 700 }}>CLINICAL STATUS</div>
-                <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>Full Recovery</div>
-              </div>
-            </div>
-
-            <button 
-              className="btn-secondary" 
-              onClick={() => setActiveTab('cases')}
-              style={{ padding: '9px 18px', fontSize: '0.875rem', borderRadius: '6px' }}
-            >
-              <span>View Case Timelines</span>
-              <ArrowRight size={15} />
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-              <img 
-                src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=400&q=80" 
-                alt="Before Rescue" 
-                style={{ width: '100%', height: '170px', objectFit: 'cover' }}
-              />
-              <div style={{
-                position: 'absolute',
-                bottom: '8px',
-                left: '8px',
-                background: 'var(--emergency)',
-                color: '#fff',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                padding: '3px 7px',
-                borderRadius: '4px'
-              }}>
-                DAY 1: INITIAL REPORT
-              </div>
-            </div>
-
-            <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-              <img 
-                src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=400&q=80" 
-                alt="After Recovery" 
-                style={{ width: '100%', height: '170px', objectFit: 'cover' }}
-              />
-              <div style={{
-                position: 'absolute',
-                bottom: '8px',
-                left: '8px',
-                background: 'var(--primary)',
-                color: '#fff',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                padding: '3px 7px',
-                borderRadius: '4px'
-              }}>
-                DAY 28: RECOVERED
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
