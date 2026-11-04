@@ -8,48 +8,37 @@ import FindHelpMap from './components/FindHelpMap';
 import CasesTracker from './components/CasesTracker';
 import Awareness from './components/Awareness';
 import AdminAnalytics from './components/AdminAnalytics';
+import NgoPortal from './components/NgoPortal';
+import VetPortal from './components/VetPortal';
 import NotificationDrawer from './components/NotificationDrawer';
 import Footer from './components/Footer';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import TermsAndConditions from './components/TermsAndConditions';
+import Interactive3DScene from './components/Interactive3DScene';
+import ThreeDClickManager from './components/ThreeDClickManager';
+import FloatingEmergencyIsland from './components/FloatingEmergencyIsland';
 
 import { INITIAL_CASES } from './data/mockData';
-import { ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [theme, setTheme] = useState('light');
-  const [lang, setLang] = useState('en');
   const [currentRole, setCurrentRole] = useState('user'); // user, ngo, vet, admin
   const [cases, setCases] = useState(() => {
-    const saved = localStorage.getItem('dermascan_cases');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.some(c => c.id === 'DS-2026-00124')) {
-          localStorage.setItem('dermascan_cases', JSON.stringify([]));
-          return [];
-        }
-        return parsed;
-      } catch {
-        return [];
-      }
-    }
-    return INITIAL_CASES;
+    const saved = localStorage.getItem('dermascan_clinical_cases_v3');
+    return saved ? JSON.parse(saved) : INITIAL_CASES;
   });
 
   const [notifications, setNotifications] = useState([
     {
       id: 1,
-      title: 'Emergency SOS Reported',
-      message: 'Severe bleeding wound stray reported in Kengeri Satellite Town (Priority 96/100)',
+      title: '🚨 Emergency SOS Dispatched',
+      message: 'Acute traumatic wound and pyoderma reported in Kengeri Satellite Town (Priority 96/100). Broadcast sent to PFA Bengaluru.',
       time: '10m ago',
       type: 'emergency'
     },
     {
       id: 2,
-      title: 'Case Accepted',
-      message: 'ABC Animal Rescue accepted Case DS-2026-00124 (Canine Mange)',
+      title: '🏥 Case Accepted by Sarvoham Foundation',
+      message: 'Sarvoham Animal Foundation accepted Case DS-2026-00124 (Canine Sarcoptic Mange). Volunteer Chethan Sharma assigned.',
       time: '45m ago',
       type: 'info'
     }
@@ -59,7 +48,7 @@ export default function App() {
 
   // Sync cases to localStorage
   useEffect(() => {
-    localStorage.setItem('dermascan_cases', JSON.stringify(cases));
+    localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify(cases));
   }, [cases]);
 
   // Sync dataset theme attribute
@@ -78,7 +67,7 @@ export default function App() {
     // Add real-time notification
     const newNotif = {
       id: Date.now(),
-      title: newCase.urgency === 'Emergency' ? 'Emergency SOS Created' : 'New Case Generated',
+      title: newCase.urgency === 'Emergency' ? '🚨 Emergency SOS Created' : '📋 New Case Generated',
       message: `Case ${newCase.id} created for ${newCase.animalType} in ${newCase.locationName}`,
       time: 'Just now',
       type: newCase.urgency === 'Emergency' ? 'emergency' : 'info'
@@ -110,7 +99,7 @@ export default function App() {
     setNotifications(prev => [
       {
         id: Date.now(),
-        title: 'Case Accepted',
+        title: '🏥 Case Accepted',
         message: `${ngoName} accepted ${caseId}. Volunteer ${volunteerName} assigned.`,
         time: 'Just now',
         type: 'info'
@@ -136,80 +125,37 @@ export default function App() {
     }));
   };
 
-  const [toastBanner, setToastBanner] = useState(null);
-
   const handleScanComplete = (scanResult) => {
     setLastScanResult(scanResult);
   };
 
-  const handleRoleChange = (newRole) => {
-    setCurrentRole(newRole);
-    let targetTab = 'home';
-    let roleLabel = 'Citizen Reporter (Public View)';
-
-    if (newRole === 'ngo') {
-      targetTab = 'help';
-      roleLabel = 'Rescue NGO (Dispatch View)';
-    } else if (newRole === 'vet') {
-      targetTab = 'cases';
-      roleLabel = 'Veterinarian (Clinical Audit View)';
-    } else if (newRole === 'admin') {
-      targetTab = 'analytics';
-      roleLabel = 'System Admin (Metrics & Data Control)';
-    } else {
-      targetTab = 'home';
-      roleLabel = 'Citizen Reporter (Public View)';
-    }
-
-    setActiveTab(targetTab);
-
-    setToastBanner(`Role Switched: Activated ${roleLabel}`);
-    setTimeout(() => setToastBanner(null), 3500);
-  };
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', position: 'relative', overflowX: 'hidden' }}>
       
-      {/* Toast Notification Banner */}
-      {toastBanner && (
-        <div style={{
-          position: 'fixed',
-          top: '60px',
-          right: '24px',
-          zIndex: 9999,
-          background: 'var(--primary)',
-          color: '#ffffff',
-          padding: '10px 18px',
-          borderRadius: '6px',
-          boxShadow: 'var(--shadow-lg)',
-          fontWeight: 700,
-          fontSize: '0.85rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          animation: 'pageFadeIn 0.3s ease-out forwards'
-        }}>
-          <ShieldCheck size={16} />
-          <span>{toastBanner}</span>
-        </div>
-      )}
+      {/* Real-time 3D Interactive Canvas Background */}
+      <Interactive3DScene />
+
+      {/* Global 3D Interactive Click Waves & Mechanical Haptic Feedback */}
+      <ThreeDClickManager />
 
       {/* Top Role Switcher Header */}
-      <RoleSwitcher currentRole={currentRole} onRoleChange={handleRoleChange} />
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <RoleSwitcher currentRole={currentRole} setRole={setCurrentRole} setActiveTab={setActiveTab} />
+      </div>
 
       {/* Main Navbar */}
-      <Navbar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        unreadNotifications={notifications.length}
-        setShowNotifications={setShowNotifications}
-        currentRole={currentRole}
-        casesCount={cases.length}
-        lang={lang}
-        setLang={setLang}
-      />
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <Navbar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          unreadNotifications={notifications.length}
+          setShowNotifications={setShowNotifications}
+          currentRole={currentRole}
+          casesCount={cases.length}
+        />
+      </div>
 
       {/* Notifications Drawer */}
       {showNotifications && (
@@ -221,16 +167,21 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="app-container" style={{ flex: 1, paddingTop: '20px', paddingBottom: '30px' }}>
+      <main className="app-container" style={{ flex: 1, paddingTop: '18px', paddingBottom: '36px', position: 'relative', zIndex: 2 }}>
         
         {activeTab === 'home' && (
-          <Hero setActiveTab={setActiveTab} cases={cases} />
+          <Hero 
+            setActiveTab={setActiveTab} 
+            casesCount={cases.length} 
+            onScanComplete={handleScanComplete}
+          />
         )}
 
         {activeTab === 'detect' && (
           <AIDetection 
             setActiveTab={setActiveTab} 
             onScanComplete={handleScanComplete}
+            initialScanResult={lastScanResult}
           />
         )}
 
@@ -247,6 +198,7 @@ export default function App() {
             cases={cases}
             onAcceptCase={handleAcceptCase}
             currentRole={currentRole}
+            theme={theme}
           />
         )}
 
@@ -255,7 +207,6 @@ export default function App() {
             cases={cases}
             currentRole={currentRole}
             onUpdateStatus={handleUpdateStatus}
-            setActiveTab={setActiveTab}
           />
         )}
 
@@ -263,22 +214,47 @@ export default function App() {
           <Awareness />
         )}
 
+        {activeTab === 'ngo' && (
+          <NgoPortal 
+            cases={cases}
+            onAcceptCase={handleAcceptCase}
+            onUpdateStatus={handleUpdateStatus}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'vet' && (
+          <VetPortal 
+            cases={cases}
+            onUpdateStatus={handleUpdateStatus}
+            setCases={setCases}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
         {activeTab === 'analytics' && (
-          <AdminAnalytics cases={cases} />
-        )}
-
-        {activeTab === 'privacy' && (
-          <PrivacyPolicy setActiveTab={setActiveTab} />
-        )}
-
-        {activeTab === 'terms' && (
-          <TermsAndConditions setActiveTab={setActiveTab} />
+          <AdminAnalytics 
+            cases={cases}
+            setCases={setCases}
+            casesCount={cases.length}
+            onUpdateStatus={handleUpdateStatus}
+            onAcceptCase={handleAcceptCase}
+            setActiveTab={setActiveTab}
+            currentRole={currentRole}
+            setCurrentRole={setCurrentRole}
+          />
         )}
 
       </main>
 
       {/* Footer */}
       <Footer setActiveTab={setActiveTab} />
+
+      {/* Persistent Floating Emergency Island */}
+      <FloatingEmergencyIsland 
+        activeEmergencyCase={cases.find(c => c.urgency === 'Emergency')} 
+        setActiveTab={setActiveTab} 
+      />
 
     </div>
   );

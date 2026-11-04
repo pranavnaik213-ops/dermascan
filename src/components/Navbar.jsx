@@ -1,85 +1,154 @@
 import React, { useState } from 'react';
-import { 
-  Scan, 
-  MapPin, 
-  Activity, 
-  BookOpen, 
-  BarChart2, 
-  Bell, 
-  Sun, 
-  Moon, 
-  AlertTriangle, 
-  FileText, 
+import {
+  Scan,
+  MapPin,
+  Activity,
+  BookOpen,
+  BarChart2,
+  Bell,
+  Sun,
+  Moon,
+  AlertTriangle,
+  FileText,
   Menu,
   X,
-  ShieldCheck
+  ShieldAlert,
+  Truck,
+  Stethoscope
 } from 'lucide-react';
 
-export default function Navbar({ 
-  activeTab, 
-  setActiveTab, 
-  theme, 
-  toggleTheme, 
-  unreadNotifications, 
+export default function Navbar({
+  activeTab,
+  setActiveTab,
+  theme,
+  toggleTheme,
+  unreadNotifications,
   setShowNotifications,
-  casesCount,
-  lang,
-  setLang
+  currentRole,
+  casesCount
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: Scan },
-    { id: 'detect', label: 'Dermatological Screening', icon: Activity },
-    { id: 'report', label: 'Report Animal', icon: MapPin },
-    { id: 'help', label: 'Rescue Map', icon: MapPin },
-    { id: 'cases', label: 'Cases Tracker', icon: FileText, count: casesCount },
-    { id: 'awareness', label: 'Guide & Awareness', icon: BookOpen },
-    { id: 'analytics', label: 'Analytics', icon: BarChart2 }
-  ];
+  const getNavItems = () => {
+    if (currentRole === 'ngo') {
+      return [
+        { id: 'ngo', label: 'NGO Dispatch Hub', icon: Truck },
+        { id: 'help', label: 'Rescue Radar', icon: MapPin },
+        { id: 'cases', label: 'Case Hub', icon: FileText, count: casesCount },
+        { id: 'home', label: 'Overview', icon: Scan },
+        { id: 'awareness', label: 'Clinical Guide', icon: BookOpen }
+      ];
+    }
+    if (currentRole === 'vet') {
+      return [
+        { id: 'vet', label: 'Vet Clinical Desk', icon: Stethoscope },
+        { id: 'cases', label: 'Case Hub', icon: FileText, count: casesCount },
+        { id: 'detect', label: 'AI Lesion Studio', icon: Activity },
+        { id: 'home', label: 'Overview', icon: Scan },
+        { id: 'awareness', label: 'Clinical Guide', icon: BookOpen },
+        { id: 'analytics', label: 'Model Metrics', icon: BarChart2 }
+      ];
+    }
+    if (currentRole === 'admin') {
+      return [
+        { id: 'analytics', label: 'Admin Dashboard', icon: ShieldAlert },
+        { id: 'help', label: 'Rescue Radar', icon: MapPin },
+        { id: 'cases', label: 'Case Hub', icon: FileText, count: casesCount },
+        { id: 'home', label: 'Overview', icon: Scan },
+        { id: 'awareness', label: 'Clinical Guide', icon: BookOpen }
+      ];
+    }
+    return [
+      { id: 'home', label: 'Overview', icon: Scan },
+      { id: 'detect', label: 'Screen Lesion', icon: Activity },
+      { id: 'report', label: 'Report Stray', icon: MapPin },
+      { id: 'help', label: 'Rescue Radar', icon: MapPin },
+      { id: 'cases', label: 'Case Hub', icon: FileText, count: casesCount },
+      { id: 'awareness', label: 'Clinical Guide', icon: BookOpen },
+      { id: 'analytics', label: 'Model Metrics', icon: BarChart2 }
+    ];
+  };
+
+  const navItems = getNavItems();
 
   return (
-    <nav style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000,
-      background: 'var(--bg-card)',
-      backdropFilter: 'var(--glass-blur)',
-      WebkitBackdropFilter: 'var(--glass-blur)',
-      borderBottom: '1px solid var(--border-color)',
-      boxShadow: 'var(--shadow-sm)'
-    }}>
-      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 28px', gap: '16px' }}>
-        
-        {/* Brand Logo & Custom Domain */}
-        <div 
+    <nav
+      aria-label="Main Navigation"
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        background: 'var(--bg-card)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-xs)'
+      }}
+    >
+      <div
+        className="app-container"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: '10px',
+          paddingBottom: '10px',
+          gap: '12px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+        {/* Brand Identity */}
+        <button
           onClick={() => setActiveTab('home')}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}
+          aria-label="DermaScan Home"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'transparent',
+            padding: 0,
+            textAlign: 'left',
+            flexShrink: 0
+          }}
         >
           <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, var(--primary) 0%, #047857 100%)',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px var(--primary-glow)'
+            boxShadow: '0 4px 12px var(--primary-glow)',
+            flexShrink: 0
           }}>
-            <ShieldCheck size={20} />
+            <ShieldAlert size={20} strokeWidth={2.2} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.025em', color: 'var(--text-main)' }}>
-              DERMA<span className="gradient-text">SCAN</span>
-            </span>
-            <span className="badge badge-low" style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px' }}>
-              dermascan.org
-            </span>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                fontFamily: 'var(--font-heading)',
+                fontWeight: 800,
+                fontSize: '1.25rem',
+                letterSpacing: '-0.03em',
+                color: 'var(--text-main)',
+                whiteSpace: 'nowrap'
+              }}>
+                DERMA<span style={{ color: 'var(--primary)' }}>SCAN</span>
+              </span>
+              <span className="badge badge-low" style={{ fontSize: '0.65rem', padding: '2px 7px' }}>
+                AI V2.0
+              </span>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              Veterinary Triage & Rescue • <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>{currentRole}</span>
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* Desktop Nav Items (No Pill Shapes) */}
+        {/* Desktop Nav Items */}
         <div style={{ display: 'none', gap: '4px', alignItems: 'center' }} className="desktop-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -93,30 +162,28 @@ export default function Navbar({
                   alignItems: 'center',
                   gap: '6px',
                   padding: '7px 12px',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: isActive ? 800 : 600,
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.84rem',
+                  fontWeight: isActive ? 700 : 500,
                   whiteSpace: 'nowrap',
-                  transition: 'all 0.2s ease',
-                  background: isActive 
-                    ? 'var(--primary-light)' 
-                    : 'transparent',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  background: isActive ? 'var(--primary-light)' : 'transparent',
                   color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                  border: isActive 
-                    ? '1px solid var(--primary)' 
+                  border: isActive
+                    ? '1px solid rgba(5, 150, 105, 0.28)'
                     : '1px solid transparent'
                 }}
               >
-                <Icon size={15} color={isActive ? 'var(--primary)' : 'var(--text-muted)'} />
+                <Icon size={16} strokeWidth={isActive ? 2.3 : 1.9} color={isActive ? 'var(--primary)' : 'currentColor'} />
                 <span>{item.label}</span>
                 {item.count !== undefined && (
                   <span style={{
                     background: 'var(--primary)',
                     color: '#ffffff',
-                    fontSize: '0.675rem',
-                    fontWeight: 800,
-                    borderRadius: '4px',
-                    padding: '2px 6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-full)',
+                    padding: '1px 6px',
                     marginLeft: '2px'
                   }}>
                     {item.count}
@@ -127,128 +194,109 @@ export default function Navbar({
           })}
         </div>
 
-        {/* Right Header Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          
-          {/* Emergency Quick Button (Rectangular, 6px radius) */}
-          <button 
-            className="btn-danger"
+        {/* Action Controls & Utilities */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+
+          {/* Quick Emergency SOS button */}
+          <button
+            className="btn-3d btn-3d-danger"
             onClick={() => setActiveTab('report')}
-            style={{ padding: '7px 14px', fontSize: '0.775rem', borderRadius: '6px', whiteSpace: 'nowrap' }}
+            style={{
+              padding: '8px 14px',
+              fontSize: '0.785rem',
+              borderRadius: 'var(--radius-full)',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.03em',
+              flexShrink: 0
+            }}
           >
-            <AlertTriangle size={14} className="animate-beacon" />
-            <span>EMERGENCY REPORT</span>
+            <AlertTriangle size={15} className="pulse-emergency" />
+            <span className="emergency-label-full">EMERGENCY SOS</span>
+            <span className="emergency-label-short">SOS</span>
           </button>
 
           {/* Notifications Drawer Toggle */}
           <button
             onClick={() => setShowNotifications(prev => !prev)}
+            aria-label="Toggle notifications"
+            className="btn-3d btn-3d-ghost"
             style={{
               position: 'relative',
-              width: '36px',
-              height: '36px',
-              borderRadius: '6px',
-              background: 'var(--bg-main)',
-              border: '1px solid var(--border-color)',
+              width: '38px',
+              height: '38px',
+              borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-main)',
-              cursor: 'pointer'
+              padding: 0
             }}
           >
-            <Bell size={17} />
+            <Bell size={18} strokeWidth={1.9} />
             {unreadNotifications > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-3px',
-                right: '-3px',
+                top: '-4px',
+                right: '-4px',
                 background: 'var(--emergency)',
                 color: '#fff',
                 fontSize: '0.65rem',
-                fontWeight: 800,
+                fontWeight: 700,
                 width: '18px',
                 height: '18px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 8px rgba(220, 38, 38, 0.5)'
+                boxShadow: '0 0 8px var(--emergency-glow)'
               }}>
                 {unreadNotifications}
               </span>
             )}
           </button>
 
-          {/* Language Selector (No Emojis) */}
-          <select
-            value={lang || 'en'}
-            onChange={(e) => setLang && setLang(e.target.value)}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              background: 'var(--bg-main)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-main)',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-            title="Switch Platform Language"
-          >
-            <option value="en">English</option>
-            <option value="kn">ಕನ್ನಡ</option>
-            <option value="hi">हिन्दी</option>
-          </select>
-
           {/* Theme Switcher */}
           <button
             onClick={toggleTheme}
+            aria-label="Toggle light and dark mode"
+            className="btn-3d btn-3d-ghost"
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '6px',
-              background: 'var(--bg-main)',
-              border: '1px solid var(--border-color)',
+              width: '38px',
+              height: '38px',
+              borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-main)',
-              cursor: 'pointer'
+              padding: 0
             }}
-            title="Toggle Light/Dark Theme"
           >
-            {theme === 'dark' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#0284c7" />}
+            {theme === 'dark' ? <Sun size={18} color="#fbbf24" strokeWidth={2} /> : <Moon size={18} color="#0284c7" strokeWidth={2} />}
           </button>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle mobile menu"
+            className="btn-3d btn-3d-ghost mobile-toggle"
             style={{
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              background: 'var(--bg-main)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              color: 'var(--text-main)'
+              width: '38px',
+              height: '38px',
+              borderRadius: 'var(--radius-sm)',
+              padding: 0
             }}
-            className="mobile-toggle"
           >
-            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div style={{
           background: 'var(--bg-card)',
           borderTop: '1px solid var(--border-color)',
-          padding: '12px 20px',
+          padding: '14px 20px',
           display: 'flex',
           flexDirection: 'column',
           gap: '6px'
@@ -267,15 +315,16 @@ export default function Navbar({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: '6px',
+                  padding: '11px 16px',
+                  borderRadius: 'var(--radius-sm)',
                   background: isActive ? 'var(--primary-light)' : 'transparent',
                   color: isActive ? 'var(--primary)' : 'var(--text-main)',
-                  fontWeight: isActive ? 700 : 500
+                  fontWeight: isActive ? 700 : 500,
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Icon size={17} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Icon size={18} />
                   <span>{item.label}</span>
                 </div>
                 {item.count !== undefined && (
@@ -284,28 +333,45 @@ export default function Navbar({
               </button>
             );
           })}
-          
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px', display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={() => { setActiveTab('privacy'); setMobileMenuOpen(false); }}
-              style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'transparent' }}
-            >
-              Privacy Policy
-            </button>
-            <button 
-              onClick={() => { setActiveTab('terms'); setMobileMenuOpen(false); }}
-              style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'transparent' }}
-            >
-              Terms & Conditions
-            </button>
-          </div>
         </div>
       )}
 
       <style>{`
-        @media (min-width: 980px) {
-          .desktop-nav { display: flex !important; }
+        .emergency-label-short { display: none; }
+        @media (min-width: 1360px) {
+          .desktop-nav { 
+            display: flex !important; 
+            flex: 1;
+            justify-content: center;
+            margin: 0 16px;
+            gap: 5px;
+          }
+          .desktop-nav button {
+            padding: 7px 12px !important;
+            font-size: 0.84rem !important;
+          }
           .mobile-toggle { display: none !important; }
+        }
+        @media (min-width: 1040px) and (max-width: 1359px) {
+          .desktop-nav { 
+            display: flex !important; 
+            flex: 1;
+            justify-content: center;
+            margin: 0 8px;
+            gap: 2px;
+          }
+          .desktop-nav button {
+            padding: 6px 7px !important;
+            font-size: 0.77rem !important;
+            gap: 4px !important;
+          }
+          .emergency-label-full { display: none; }
+          .emergency-label-short { display: inline; }
+          .mobile-toggle { display: none !important; }
+        }
+        @media (max-width: 1039px) {
+          .desktop-nav { display: none !important; }
+          .mobile-toggle { display: flex !important; }
         }
       `}</style>
     </nav>
