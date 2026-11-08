@@ -1,3 +1,5 @@
+import { decodeStoredJpeg, getSupabaseConfig, insertRecord, removePrivatePhoto, uploadPrivatePhoto } from '../server/persistence.js';
+
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_ANIMALS = new Set(['Dog', 'Cat', 'Bird', 'Other / unsure']);
 const RATE_WINDOW_MS = 60_000;
@@ -37,19 +39,9 @@ async function readBody(req) {
 }
 
 function decodeImage(imageDataUrl) {
-  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(imageDataUrl || '');
-  if (!match) return null;
-  const [, mimeType, base64] = match;
-  const bytes = Buffer.from(base64, 'base64');
-  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return null;
-
-  const validSignature = mimeType === 'image/jpeg'
-    ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
-    : mimeType === 'image/png'
-      ? bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
-      : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
-
-  return validSignature ? `data:${mimeType};base64,${base64}` : null;
+  const bytes = decodeStoredJpeg(imageDataUrl);
+  if (!bytes) return null;
+  return { dataUrl: imageDataUrl, bytes };
 }
 
 export default async function handler(req, res) {
@@ -65,8 +57,9 @@ export default async function handler(req, res) {
     }
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return send(res, 503, { error: 'AI analysis is not configured yet. Add OPENAI_API_KEY to the server environment.' });
+  const database = getSupabaseConfig();
+  if (!process.env.OPENAI_API_KEY || !database) {
+    return send(res, 503, { error: 'AI analysis and secure record storage are not configured. Set OPENAI_API_KEY, SUPABASE_URL, and SUPABASE_SECRET_KEY on the server.' });
   }
 
   let body;
@@ -78,8 +71,8 @@ export default async function handler(req, res) {
   }
 
   if (!ALLOWED_ANIMALS.has(body?.animal)) return send(res, 400, { error: 'Choose a valid animal type.' });
-  const imageDataUrl = decodeImage(body?.imageDataUrl);
-  if (!imageDataUrl) return send(res, 400, { error: 'Choose a valid JPG, PNG, or WebP image under 2 MB.' });
+  const image = decodeImage(body?.imageDataUrl);
+  if (!image) return send(res, 400, { error: 'Choose a valid JPEG image under 2 MB.' });
 
   const now = Date.now();
   for (const [key, timestamps] of requestTimes) {
@@ -117,7 +110,7 @@ export default async function handler(req, res) {
             role: 'user',
             content: [
               { type: 'input_text', text: `Animal type selected by user: ${body.animal}. Describe visible features only.` },
-              { type: 'input_image', image_url: imageDataUrl, detail: 'high' }
+              { type: 'input_image', image_url: image.dataUrl, detail: 'high' }
             ]
           }
         ],
@@ -153,10 +146,24 @@ export default async function handler(req, res) {
 
   try {
     const analysis = JSON.parse(text);
-    return send(res, 200, {
-      analysis,
-      model: process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini'
-    });
+    const model = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+    let photoPath;
+    try {
+      photoPath = await uploadPrivatePhoto(database, 'scans', image.bytes);
+      const record = await insertRecord(database, 'photo_analyses', {
+        animal: body.animal,
+        image_kind: analysis.image_kind,
+        image_quality: analysis.image_quality,
+        visible_observations: analysis.visible_observations,
+        summary: analysis.summary,
+        model,
+        photo_path: photoPath
+      });
+      return send(res, 200, { analysis, analysisId: record.id });
+    } catch {
+      if (photoPath) await removePrivatePhoto(database, photoPath).catch(() => false);
+      return send(res, 503, { error: 'The photo was analyzed but could not be recorded. Please try again later.' });
+    }
   } catch {
     return send(res, 502, { error: 'The analysis response was incomplete. Please try again.' });
   }

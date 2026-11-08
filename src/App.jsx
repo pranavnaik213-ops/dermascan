@@ -78,7 +78,9 @@ function App() {
   const [photoAnimal, setPhotoAnimal] = useState('Dog');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [analysisId, setAnalysisId] = useState(null);
   const [analysisError, setAnalysisError] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -177,6 +179,7 @@ function App() {
     }
     setPhotoError('');
     setAnalysis(null);
+    setAnalysisId(null);
     setAnalysisError('');
     const url = URL.createObjectURL(file);
     objectUrls.current.add(url);
@@ -200,6 +203,7 @@ function App() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'The analysis could not be completed. Please try again.');
       setAnalysis(result.analysis);
+      setAnalysisId(result.analysisId);
     } catch (error) {
       setAnalysisError(error.message === 'IMAGE_TOO_LARGE'
         ? 'This photo is too large to analyze. Choose a smaller image.'
@@ -243,27 +247,61 @@ function App() {
     window.setTimeout(() => URL.revokeObjectURL(href), 1000);
   };
 
-  const submitReport = (event) => {
+  const submitReport = async (event) => {
     event.preventDefault();
     if (!location.trim()) {
       setFormError('Add an area, address, or approximate location before saving this report.');
       return;
     }
+    const reportCode = `DS-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const report = {
-      id: `DS-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+      id: reportCode,
       createdAt: new Date().toISOString(),
       animal,
       location: location.trim(),
       landmark: landmark.trim(),
       observations: observations.trim(),
       photoName: reportPhoto?.name || null,
-      status: 'Prepared on this device; not sent to a rescue service.'
+      status: 'Not yet recorded on the server.'
     };
+
+    setIsSubmittingReport(true);
+    setFormError('');
+    let recordError = '';
+    try {
+      const linkedAnalysisId = analysisId && reportPhoto === photo && photoAnimal === animal ? analysisId : null;
+      const photoDataUrl = reportPhoto && !linkedAnalysisId ? await imageToDataUrl(reportPhoto.file) : null;
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportCode,
+          animal,
+          location: location.trim(),
+          landmark: landmark.trim(),
+          observations: observations.trim(),
+          photoName: reportPhoto?.name || null,
+          photoDataUrl,
+          analysisId: linkedAnalysisId
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not record this report on the server.');
+      report.serverRecordId = result.reportId;
+      report.status = 'Recorded in the secure DermaScan database; not sent to a rescue service.';
+    } catch (error) {
+      recordError = error.message || 'Could not reach the report server.';
+      report.status = 'Not recorded on the server. Local copy only.';
+    } finally {
+      setIsSubmittingReport(false);
+    }
+
     const next = [report, ...reports];
     setReports(next);
     setStorageAvailable(saveStored(REPORTS_KEY, next));
-    setFormError('');
-    setNotice('Report prepared on this device. It has not been sent to a rescue service.');
+    setNotice(recordError
+      ? `The report was downloaded locally but not recorded on the server: ${recordError}`
+      : 'Report recorded securely. It has not been sent to a rescue service.');
     downloadReport(report);
   };
 
@@ -342,7 +380,7 @@ function App() {
                 <option>Dog</option><option>Cat</option><option>Bird</option><option>Other / unsure</option>
               </select>
               <ul className="check-list"><li><Check size={16} /> Use even light and keep focus</li><li><Check size={16} /> Keep a safe distance</li><li><Check size={16} /> Ask a veterinarian to assess concerns</li></ul>
-              <div className="notice-box"><ShieldCheck size={17} /><p><strong>Visible features only.</strong> AI may miss or misdescribe signs. It will not identify diseases or recommend treatment. Your photo is sent to the AI provider only when you choose to analyze it.</p></div>
+              <div className="notice-box"><ShieldCheck size={17} /><p><strong>Visible features only.</strong> AI may miss or misdescribe signs. It will not identify diseases or recommend treatment. When you analyze, the photo is sent to the AI provider and saved to DermaScan’s private database. Analysis won’t complete if secure storage is unavailable.</p></div>
               <button className="button button-primary full-width" disabled={!photo || isAnalyzing} onClick={analyzePhoto}>{isAnalyzing ? <><RotateCcw className="spin-icon" size={17} /> Reviewing photo…</> : <><Camera size={17} /> Analyze visible signs</>}</button>
               {analysisError && <p className="form-message error-message" role="alert">{analysisError}</p>}
             </aside>
@@ -354,7 +392,7 @@ function App() {
             <p className="quality-label">Image quality: <strong>{analysis.image_quality.replaceAll('_', ' ')}</strong></p>
             {analysis.visible_observations.length > 0 && <ul className="observation-list">{analysis.visible_observations.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul>}
             <div className="notice-box"><ShieldCheck size={17} /><p><strong>Not a diagnosis.</strong> These are computer-generated visual observations, not confirmed symptoms or a disease identification. Have a veterinarian review any concern.</p></div>
-            {analysis.image_kind === 'animal_skin' && analysis.visible_observations.length > 0 && <button className="button button-secondary" onClick={() => { setReportPhoto(photo); setObservations(`AI-generated visual notes (please verify with a veterinarian): ${analysis.visible_observations.join('; ')}`); setPage('report'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Add notes to local report <ArrowRight size={16} /></button>}
+            {analysis.image_kind === 'animal_skin' && analysis.visible_observations.length > 0 && <button className="button button-secondary" onClick={() => { setAnimal(photoAnimal); setReportPhoto(photo); setObservations(`AI-generated visual notes (please verify with a veterinarian): ${analysis.visible_observations.join('; ')}`); setPage('report'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Add notes to report <ArrowRight size={16} /></button>}
           </section>}
           {photo && <div className="panel image-details"><IconMark><FileImage size={19} /></IconMark><div><strong>Image ready to review</strong><p>{photo.name} · {Math.max(1, Math.round(photo.file.size / 1024))} KB</p></div><button className="button button-secondary" onClick={() => navigate('guidance')}>What should I do next?</button></div>}
         </section>}
@@ -376,10 +414,10 @@ function App() {
               <div className="form-section"><div className="form-heading"><span>02</span><div><h2>Where was the animal?</h2><p>Enter only a location you can verify.</p></div></div><label className="field-label" htmlFor="location">Area, address, or coordinates <span className="required-label">Required</span></label><div className="location-row"><input id="location" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Street, neighborhood, or nearby area" required /><button type="button" className="button button-secondary location-button" onClick={useCurrentLocation}><MapPin size={16} /> Use my location</button></div><label className="field-label" htmlFor="landmark">Landmark <span className="optional-label">Optional</span></label><input id="landmark" value={landmark} onChange={(event) => setLandmark(event.target.value)} placeholder="A nearby shop, junction, or building" /></div>
               <div className="form-section"><div className="form-heading"><span>03</span><div><h2>What did you observe?</h2><p>Describe visible signs without guessing a diagnosis.</p></div></div><label className="field-label" htmlFor="observations">Notes <span className="optional-label">Optional</span></label><textarea id="observations" value={observations} onChange={(event) => setObservations(event.target.value)} rows="5" maxLength="1200" placeholder="For example: limping, visible wound, or when you last saw the animal." /><span className="character-count">{observations.length}/1200</span></div>
               {formError && <p className="form-message error-message" role="alert">{formError}</p>}{notice && <p className="form-message success-message" role="status">{notice}</p>}
-              <button className="button button-primary button-large" type="submit"><ArrowDownToLine size={18} /> Prepare and download report</button>
-              <p className="form-footnote">This creates a file on your device. You choose if, when, and with whom to share it.</p>
+              <button className="button button-primary button-large" type="submit" disabled={isSubmittingReport}><ArrowDownToLine size={18} /> {isSubmittingReport ? 'Recording report…' : 'Record and download report'}</button>
+              <p className="form-footnote">The site attempts to record your report and photo in DermaScan’s private database. If it can’t, you’ll receive a local-download fallback notice. It does not dispatch a rescue service.</p>
             </form>
-            <aside className="panel side-panel report-side"><span className="panel-kicker">Before you share</span><h2>Check the details</h2><p>Confirm the location and describe only what you directly observed. Do not approach an animal that seems frightened or injured.</p><div className="notice-box"><ShieldCheck size={17} /><p><strong>Private by default.</strong> Your report and draft stay in this browser. They are not sent to a rescue group.</p></div><h3>Reports saved here</h3>{reports.length === 0 ? <p className="empty-state">No reports prepared on this device yet.</p> : <ul className="saved-list">{reports.slice(0, 4).map((report) => <li key={report.id}><div><strong>{report.animal} · {report.location}</strong><small>{new Date(report.createdAt).toLocaleDateString()}</small></div><button className="icon-button" aria-label={`Download report ${report.id}`} onClick={() => downloadReport(report)}><ArrowDownToLine size={17} /></button></li>)}</ul>}{!storageAvailable && <p className="field-error" role="status">Browser storage is unavailable. Download reports to keep a copy.</p>}</aside>
+            <aside className="panel side-panel report-side"><span className="panel-kicker">Before you share</span><h2>Check the details</h2><p>Confirm the location and describe only what you directly observed. Do not approach an animal that seems frightened or injured.</p><div className="notice-box"><ShieldCheck size={17} /><p><strong>Server storage.</strong> Submitted reports and photos are stored privately when the backend is configured. Drafts remain in this browser until you submit. If storage fails, the app marks the download as local-only.</p></div><h3>Recent report receipts</h3>{reports.length === 0 ? <p className="empty-state">No reports prepared on this device yet.</p> : <ul className="saved-list">{reports.slice(0, 4).map((report) => <li key={report.id}><div><strong>{report.animal} · {report.location}</strong><small>{new Date(report.createdAt).toLocaleDateString()} · {report.status.startsWith('Recorded') ? 'Server recorded' : 'Local copy only'}</small></div><button className="icon-button" aria-label={`Download report ${report.id}`} onClick={() => downloadReport(report)}><ArrowDownToLine size={17} /></button></li>)}</ul>}{!storageAvailable && <p className="field-error" role="status">Browser storage is unavailable. Download reports to keep a copy.</p>}</aside>
           </div>
         </section>}
 
@@ -400,7 +438,7 @@ function App() {
         </section>
       </div>}
 
-      <footer className="site-footer"><div className="footer-main"><a className="brand footer-brand" href="#home" onClick={(event) => { event.preventDefault(); navigate('home'); }}><span className="brand-symbol"><PawPrint size={19} /></span><span>derma<span className="brand-accent">scan</span></span></a><p>Clear, careful tools for documenting animal welfare concerns.</p><p className="footer-disclaimer">Not a diagnostic or emergency service. Reports are prepared locally and are not sent to rescue organizations.</p></div><div className="footer-links"><span>Explore</span>{navItems.map(([id, label]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}</div><div className="footer-bottom"><span>© {currentYear} DermaScan</span><span>Made for clearer, more responsible care.</span></div></footer>
+      <footer className="site-footer"><div className="footer-main"><a className="brand footer-brand" href="#home" onClick={(event) => { event.preventDefault(); navigate('home'); }}><span className="brand-symbol"><PawPrint size={19} /></span><span>derma<span className="brand-accent">scan</span></span></a><p>Clear, careful tools for documenting animal welfare concerns.</p><p className="footer-disclaimer">Not a diagnostic or emergency service. Submitted records are kept privately when backend storage is configured and are never dispatched to rescue groups.</p></div><div className="footer-links"><span>Explore</span>{navItems.map(([id, label]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}</div><div className="footer-bottom"><span>© {currentYear} DermaScan</span><span>Made for clearer, more responsible care.</span></div></footer>
     </div>
   );
 }
