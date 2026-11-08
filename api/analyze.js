@@ -58,9 +58,8 @@ export default async function handler(req, res) {
   }
 
   const database = getSupabaseConfig();
-  if (!process.env.OPENAI_API_KEY || !database) {
-    return send(res, 503, { error: 'AI analysis and secure record storage are not configured. Set OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SECRET_KEY on the server.' });
-  }
+  if (!process.env.OPENAI_API_KEY) return send(res, 503, { error: 'Photo analysis is not configured. The site administrator must set OPENAI_API_KEY in Vercel server environment variables.' });
+  if (!database) return send(res, 503, { error: 'Private photo storage is not configured. The site administrator must set SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SECRET_KEY in Vercel server environment variables.' });
   let owner;
   try { owner = await authenticateUser(database, req); } catch { return send(res, 503, { error: 'Could not verify your account. Please try again.' }); }
   if (!owner) return send(res, 401, { error: 'Sign in to save a private photo review.' });
