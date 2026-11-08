@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowDownToLine, ArrowRight, Check, CheckCircle2, ChevronRight, FileImage,
-  FileText, HeartHandshake, MapPin, Menu, PawPrint, Plus, ShieldCheck,
+  ArrowDownToLine, ArrowRight, Camera, Check, CheckCircle2, ChevronRight, FileImage,
+  FileText, HeartHandshake, MapPin, Menu, PawPrint, Plus, RotateCcw, ShieldCheck,
   Stethoscope, Upload, X
 } from 'lucide-react';
 import './App.css';
@@ -27,6 +27,30 @@ function saveStored(key, value) {
   }
 }
 
+async function imageToDataUrl(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const toBlob = (quality) => new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('IMAGE_ENCODE_FAILED')), 'image/jpeg', quality);
+  });
+  let blob = await toBlob(0.82);
+  if (blob.size > 2 * 1024 * 1024) blob = await toBlob(0.62);
+  if (blob.size > 2 * 1024 * 1024) throw new Error('IMAGE_TOO_LARGE');
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('IMAGE_READ_FAILED'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function IconMark({ children }) {
   return <span className="icon-mark" aria-hidden="true">{children}</span>;
 }
@@ -48,11 +72,20 @@ function App() {
   const [reportPhoto, setReportPhoto] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [photoError, setPhotoError] = useState('');
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [cameraStream, setCameraStream] = useState(null);
+  const [photoAnimal, setPhotoAnimal] = useState('Dog');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisError, setAnalysisError] = useState('');
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const [storageAvailable, setStorageAvailable] = useState(true);
   const fileInput = useRef(null);
   const reportInput = useRef(null);
+  const cameraVideo = useRef(null);
+  const cameraCanvas = useRef(null);
   const objectUrls = useRef(new Set());
 
   useEffect(() => {
@@ -66,6 +99,63 @@ function App() {
   useEffect(() => () => {
     objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
   }, []);
+
+  useEffect(() => {
+    if (!cameraOpen || !cameraStream || !cameraVideo.current) return undefined;
+    cameraVideo.current.srcObject = cameraStream;
+    cameraVideo.current.play().catch(() => setCameraError('Camera preview could not start. Try closing and reopening the camera.'));
+    return () => cameraStream.getTracks().forEach((track) => track.stop());
+  }, [cameraOpen, cameraStream]);
+
+  const closeCamera = () => {
+    cameraStream?.getTracks().forEach((track) => track.stop());
+    setCameraStream(null);
+    setCameraOpen(false);
+    setCameraError('');
+  };
+
+  const openCamera = async () => {
+    setCameraError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Live camera is not available here. Open this page over HTTPS or choose a photo instead.');
+      setCameraOpen(true);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }
+      });
+      setCameraStream(stream);
+      setCameraOpen(true);
+    } catch (error) {
+      setCameraError(error.name === 'NotAllowedError'
+        ? 'Camera permission was not granted. Allow camera access in your browser or choose a photo instead.'
+        : 'Could not access a camera on this device. Choose a photo instead.');
+      setCameraOpen(true);
+    }
+  };
+
+  const captureCameraPhoto = () => {
+    const video = cameraVideo.current;
+    const canvas = cameraCanvas.current;
+    if (!video || !canvas || !video.videoWidth) {
+      setCameraError('Camera is still starting. Wait a moment and try again.');
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError('Could not capture this photo. Please try again.');
+        return;
+      }
+      const file = new File([blob], `dermascan-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      handleImage(file, 'photo');
+      closeCamera();
+    }, 'image/jpeg', 0.9);
+  };
 
   const navigate = (destination) => {
     setPage(destination);
@@ -86,11 +176,39 @@ function App() {
       return;
     }
     setPhotoError('');
+    setAnalysis(null);
+    setAnalysisError('');
     const url = URL.createObjectURL(file);
     objectUrls.current.add(url);
     const next = { name: file.name, url, file };
     if (target === 'report') setReportPhoto(next);
     else setPhoto(next);
+  };
+
+  const analyzePhoto = async () => {
+    if (!photo) return;
+    setIsAnalyzing(true);
+    setAnalysis(null);
+    setAnalysisError('');
+    try {
+      const imageDataUrl = await imageToDataUrl(photo.file);
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ animal: photoAnimal, imageDataUrl })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'The analysis could not be completed. Please try again.');
+      setAnalysis(result.analysis);
+    } catch (error) {
+      setAnalysisError(error.message === 'IMAGE_TOO_LARGE'
+        ? 'This photo is too large to analyze. Choose a smaller image.'
+        : error.message === 'IMAGE_ENCODE_FAILED' || error.message === 'IMAGE_READ_FAILED'
+          ? 'Could not prepare this photo. Try a JPG, PNG, or WebP image.'
+          : error.message || 'Could not connect to the analysis service. Try again later.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const useCurrentLocation = () => {
@@ -209,15 +327,35 @@ function App() {
         </section>}
 
         {page === 'photo' && <section className="page-wrap content-page">
-          <div className="page-intro"><span className="eyebrow">PHOTO REVIEW</span><h1>Organize a clear photo</h1><p>Preview an image and note the area of concern. This page does not analyze images or identify a condition.</p></div>
+          <div className="page-intro"><span className="eyebrow">PHOTO REVIEW</span><h1>Capture and review visible signs</h1><p>Take a live photo or choose one from your device. AI can describe visible features; it cannot identify or diagnose a disease.</p></div>
           <div className="workspace-grid">
             <div className="panel upload-panel">
               <input ref={fileInput} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { handleImage(event.target.files?.[0], 'photo'); event.currentTarget.value = ''; }} />
               {!photo ? <button className="drop-zone" onClick={() => fileInput.current?.click()}><span className="upload-icon"><Upload size={24} /></span><strong>Choose a photo from your device</strong><span>JPG, PNG, or WebP · up to 8 MB</span><span className="button button-secondary">Browse files</span></button> : <div className="photo-preview"><img src={photo.url} alt={`Selected image: ${photo.name}`} /><div className="photo-preview-footer"><span><CheckCircle2 size={16} /> {photo.name}</span><button className="text-button" onClick={() => { setPhoto(null); if (fileInput.current) fileInput.current.value = ''; }}>Remove photo</button></div></div>}
+              <button className="button button-secondary camera-launch" onClick={openCamera}><Camera size={17} /> Take a live photo</button>
               {photoError && <p className="field-error" role="alert">{photoError}</p>}
             </div>
-            <aside className="panel side-panel"><span className="panel-kicker">A helpful photo</span><h2>Keep it simple and safe</h2><ul className="check-list"><li><Check size={16} /> Use good, even light</li><li><Check size={16} /> Keep a comfortable distance</li><li><Check size={16} /> Avoid touching an injured animal</li><li><Check size={16} /> Ask a veterinarian to assess the image</li></ul><div className="notice-box"><ShieldCheck size={17} /><p><strong>No automated assessment.</strong> A photo preview is not a diagnosis. No image is uploaded by this page.</p></div><button className="button button-primary full-width" disabled={!photo} onClick={() => { setReportPhoto(photo); setPage('report'); setNotice('Photo attached to your local report draft.'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Add photo to report <ArrowRight size={17} /></button></aside>
+            <aside className="panel side-panel">
+              <span className="panel-kicker">AI-assisted photo notes</span><h2>Describe visible features</h2>
+              <label className="field-label" htmlFor="photo-animal">Animal in the photo</label>
+              <select id="photo-animal" value={photoAnimal} onChange={(event) => setPhotoAnimal(event.target.value)}>
+                <option>Dog</option><option>Cat</option><option>Bird</option><option>Other / unsure</option>
+              </select>
+              <ul className="check-list"><li><Check size={16} /> Use even light and keep focus</li><li><Check size={16} /> Keep a safe distance</li><li><Check size={16} /> Ask a veterinarian to assess concerns</li></ul>
+              <div className="notice-box"><ShieldCheck size={17} /><p><strong>Visible features only.</strong> AI may miss or misdescribe signs. It will not identify diseases or recommend treatment. Your photo is sent to the AI provider only when you choose to analyze it.</p></div>
+              <button className="button button-primary full-width" disabled={!photo || isAnalyzing} onClick={analyzePhoto}>{isAnalyzing ? <><RotateCcw className="spin-icon" size={17} /> Reviewing photo…</> : <><Camera size={17} /> Analyze visible signs</>}</button>
+              {analysisError && <p className="form-message error-message" role="alert">{analysisError}</p>}
+            </aside>
           </div>
+          {analysis && <section className="panel analysis-result" aria-live="polite">
+            <span className="panel-kicker">AI-GENERATED VISUAL NOTES</span>
+            <h2>{analysis.image_kind === 'animal_skin' ? 'What may be visible' : 'Photo review'}</h2>
+            <p className="analysis-summary">{analysis.summary}</p>
+            <p className="quality-label">Image quality: <strong>{analysis.image_quality.replaceAll('_', ' ')}</strong></p>
+            {analysis.visible_observations.length > 0 && <ul className="observation-list">{analysis.visible_observations.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul>}
+            <div className="notice-box"><ShieldCheck size={17} /><p><strong>Not a diagnosis.</strong> These are computer-generated visual observations, not confirmed symptoms or a disease identification. Have a veterinarian review any concern.</p></div>
+            {analysis.image_kind === 'animal_skin' && analysis.visible_observations.length > 0 && <button className="button button-secondary" onClick={() => { setReportPhoto(photo); setObservations(`AI-generated visual notes (please verify with a veterinarian): ${analysis.visible_observations.join('; ')}`); setPage('report'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Add notes to local report <ArrowRight size={16} /></button>}
+          </section>}
           {photo && <div className="panel image-details"><IconMark><FileImage size={19} /></IconMark><div><strong>Image ready to review</strong><p>{photo.name} · {Math.max(1, Math.round(photo.file.size / 1024))} KB</p></div><button className="button button-secondary" onClick={() => navigate('guidance')}>What should I do next?</button></div>}
         </section>}
 
@@ -252,6 +390,15 @@ function App() {
           <button className="button button-primary" onClick={() => navigate('report')}>Prepare a report <ArrowRight size={17} /></button>
         </section>}
       </main>
+
+      {cameraOpen && <div className="camera-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCamera(); }}>
+        <section className="camera-dialog" role="dialog" aria-modal="true" aria-labelledby="camera-title">
+          <div className="camera-heading"><div><span className="eyebrow">LIVE CAMERA</span><h2 id="camera-title">Take a photo</h2></div><button className="icon-button" aria-label="Close camera" onClick={closeCamera}><X size={18} /></button></div>
+          {cameraError ? <div className="camera-error" role="alert"><Camera size={25} /><p>{cameraError}</p><button className="button button-secondary" onClick={() => { closeCamera(); openCamera(); }}><RotateCcw size={16} /> Try again</button></div> : <div className="camera-preview"><video ref={cameraVideo} autoPlay playsInline muted aria-label="Live camera preview" /><canvas ref={cameraCanvas} className="visually-hidden" /></div>}
+          <p className="camera-disclaimer">Keep a safe distance. Don’t approach or handle an animal that is distressed or injured.</p>
+          <div className="camera-actions"><button className="button button-secondary" onClick={closeCamera}>Cancel</button>{!cameraError && <button className="button button-primary" onClick={captureCameraPhoto}><Camera size={17} /> Capture photo</button>}</div>
+        </section>
+      </div>}
 
       <footer className="site-footer"><div className="footer-main"><a className="brand footer-brand" href="#home" onClick={(event) => { event.preventDefault(); navigate('home'); }}><span className="brand-symbol"><PawPrint size={19} /></span><span>derma<span className="brand-accent">scan</span></span></a><p>Clear, careful tools for documenting animal welfare concerns.</p><p className="footer-disclaimer">Not a diagnostic or emergency service. Reports are prepared locally and are not sent to rescue organizations.</p></div><div className="footer-links"><span>Explore</span>{navItems.map(([id, label]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}</div><div className="footer-bottom"><span>© {currentYear} DermaScan</span><span>Made for clearer, more responsible care.</span></div></footer>
     </div>

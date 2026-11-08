@@ -73,6 +73,7 @@ h1, h2, h3 { font-family: 'Manrope', sans-serif; color: var(--ink); }
 .upload-panel { min-height: 390px; padding: 18px; }
 .drop-zone { width: 100%; min-height: 352px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 28px; background: #fbfdfb; border: 1px dashed #bdd0c4; border-radius: 12px; color: var(--ink); }
 .drop-zone:hover { border-color: var(--green); background: #f5faf6; }
+.camera-launch { display: flex; width: fit-content; margin: 13px auto 0; }
 .drop-zone strong { font-size: 15px; }
 .drop-zone > span:not(.upload-icon):not(.button) { color: var(--muted); font-size: 12px; }
 .upload-icon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--green); background: var(--green-soft); border-radius: 16px; }
@@ -84,6 +85,7 @@ h1, h2, h3 { font-family: 'Manrope', sans-serif; color: var(--ink); }
 .side-panel { padding: 24px; }
 .panel-kicker { display: block; margin-bottom: 9px; color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
 .side-panel h2 { margin: 0 0 13px; font-size: 20px; letter-spacing: -.5px; }
+.side-panel select { width: 100%; min-height: 44px; margin-bottom: 8px; padding: 9px 11px; color: var(--ink); background: white; border: 1px solid #dce5df; border-radius: 8px; font-size: 12px; }
 .side-panel > p { color: var(--muted); font-size: 12px; line-height: 1.7; }
 .check-list { display: grid; gap: 13px; margin: 21px 0; padding: 0; list-style: none; color: #53675d; font-size: 12px; }
 .check-list li { display: flex; align-items: center; gap: 9px; }
@@ -159,6 +161,26 @@ h1, h2, h3 { font-family: 'Manrope', sans-serif; color: var(--ink); }
 .footer-links button { padding: 4px 0; font-size: 11px; }
 .footer-bottom { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 15px; padding: 16px 0 20px; border-top: 1px solid var(--border); color: #829088; font-size: 10px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.camera-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: rgba(19, 37, 29, .62); backdrop-filter: blur(5px); }
+.camera-dialog { width: min(100%, 690px); padding: 22px; background: white; border: 1px solid #dfe8e2; border-radius: 17px; box-shadow: 0 24px 70px rgba(9, 28, 18, .28); }
+.camera-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.camera-heading h2 { margin: 5px 0 0; font-size: 20px; }
+.camera-preview { width: 100%; overflow: hidden; background: #111; border-radius: 12px; aspect-ratio: 4 / 3; }
+.camera-preview video { width: 100%; height: 100%; display: block; object-fit: cover; }
+.camera-error { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 25px; color: var(--muted); background: #f8faf8; border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+.camera-error > svg { color: var(--green); }
+.camera-error p { max-width: 400px; margin: 0; font-size: 13px; line-height: 1.6; }
+.camera-disclaimer { margin: 13px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.camera-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.analysis-result { margin-top: 18px; padding: 23px; }
+.analysis-result h2 { margin: 5px 0 8px; font-size: 22px; }
+.analysis-summary { margin-bottom: 13px; color: #43594d; font-size: 13px; line-height: 1.7; }
+.quality-label { margin: 0; color: var(--muted); font-size: 11px; text-transform: capitalize; }
+.quality-label strong { color: var(--ink); }
+.observation-list { display: grid; gap: 9px; margin: 15px 0; padding-left: 20px; color: #43594d; font-size: 13px; line-height: 1.6; }
+.analysis-result .notice-box { max-width: 730px; }
+.spin-icon { animation: spin-once 1.2s linear infinite; }
+@keyframes spin-once { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
   .site-header { gap: 20px; }
@@ -201,6 +223,7 @@ h1, h2, h3 { font-family: 'Manrope', sans-serif; color: var(--ink); }
   .workspace-grid, .report-layout { grid-template-columns: 1fr; }
   .upload-panel { min-height: 300px; padding: 12px; }
   .drop-zone { min-height: 274px; padding: 21px; text-align: center; }
+  .camera-dialog { padding: 15px; }
   .report-form { padding: 0 18px 20px; }
   .form-section { padding: 22px 0; }
   .location-row { grid-template-columns: 1fr; }

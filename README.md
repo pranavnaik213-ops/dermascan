@@ -1,16 +1,22 @@
-# React + Vite
+# DermaScan
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+DermaScan helps people photograph and document animal skin concerns. Its optional AI feature describes visible image details only; it does not diagnose a disease or recommend treatment.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env.local` and add an OpenAI API key. Keep `.env.local` private and never commit it.
+3. Start the Vite development server with `npm run dev`.
 
-## React Compiler
+The analysis endpoint is `api/analyze.js`. The Vite dev server exposes the same endpoint locally. On Vercel, add `OPENAI_API_KEY` in the project's Environment Variables before deployment. `OPENAI_VISION_MODEL` is optional and defaults to `gpt-4.1-mini`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+When a user chooses **Analyze visible signs**, the browser resizes the image and sends it to the server endpoint. The endpoint forwards it to the OpenAI Responses API. The API key stays server-side. The model is instructed to describe visible features only; disease identification, diagnosis, and treatment advice are intentionally excluded.
 
-## Expanding the Oxlint configuration
+Image analysis requires a configured API key and may incur API usage charges. Without the key, photo capture and local reports still work; analysis returns a configuration message.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Commands
+
+- `npm run dev` — start local development
+- `npm run lint` — check source with Oxlint
+- `npm run build` — create the production bundle
+- `npm run preview` — preview the production bundle
