@@ -1,6 +1,6 @@
-import { decodeStoredJpeg, findAnalysis, getSupabaseConfig, insertRecord, removePrivatePhoto, uploadPrivatePhoto } from '../server/persistence.js';
+import { authenticateUser, decodeStoredJpeg, findAnalysis, getSupabaseConfig, insertRecord, removePrivatePhoto, uploadPrivatePhoto } from '../server/persistence.js';
 
-const MAX_REQUEST_BYTES = 3 * 1024 * 1024;
+const MAX_REQUEST_BYTES = 4 * 1024 * 1024;
 const ALLOWED_ANIMALS = new Set(['Dog', 'Cat', 'Bird', 'Other / unsure']);
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 6;
@@ -60,7 +60,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'Use POST to save a report.' });
   if (!checkOrigin(req)) return send(res, 403, { error: 'Cross-origin requests are not allowed.' });
   const database = getSupabaseConfig();
-  if (!database) return send(res, 503, { error: 'Secure report storage is not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server.' });
+  if (!database) return send(res, 503, { error: 'Secure report storage is not configured. Set SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SECRET_KEY on the server.' });
+  let owner;
+  try { owner = await authenticateUser(database, req); } catch { return send(res, 503, { error: 'Could not verify your account. Please try again.' }); }
+  if (!owner) return send(res, 401, { error: 'Sign in to save a private report.' });
 
   let body;
   try {
@@ -81,47 +84,59 @@ export default async function handler(req, res) {
   if (typeof body?.landmark !== 'string' || body.landmark.length > 300 || typeof body?.observations !== 'string' || body.observations.length > 1200) {
     return send(res, 400, { error: 'Landmark or notes exceed the allowed length.' });
   }
+  if (typeof body?.observedAt !== 'string' || !Number.isFinite(Date.parse(body.observedAt))) {
+    return send(res, 400, { error: 'Choose a valid date and time for the observation.' });
+  }
   if (body?.photoName != null && (typeof body.photoName !== 'string' || body.photoName.length > 255)) {
     return send(res, 400, { error: 'Photo filename is invalid.' });
   }
   if (body?.analysisId != null && !isUuid(body.analysisId)) return send(res, 400, { error: 'Analysis ID is invalid.' });
 
-  let photoPath = null;
-  let uploadedPath = null;
+  const photoPaths = [];
+  const uploadedPaths = [];
   if (body.analysisId) {
     try {
-      const analysisRecord = await findAnalysis(database, body.analysisId);
+      const analysisRecord = await findAnalysis(database, body.analysisId, owner.id);
       if (!analysisRecord || analysisRecord.animal !== body.animal) return send(res, 400, { error: 'The attached analysis could not be found.' });
-      photoPath = analysisRecord.photo_path;
+      photoPaths.push(analysisRecord.photo_path);
     } catch {
       return send(res, 503, { error: 'Could not verify the attached analysis. Please try again.' });
     }
-  } else if (body.photoDataUrl != null) {
-    const bytes = decodeStoredJpeg(body.photoDataUrl);
-    if (!bytes) return send(res, 400, { error: 'Attached photo must be a valid JPEG under 2 MB.' });
+  }
+  const photoDataUrls = body.photoDataUrls ?? (body.photoDataUrl ? [body.photoDataUrl] : []);
+  const maxUploadedPhotos = body.analysisId ? 2 : 3;
+  if (!Array.isArray(photoDataUrls) || photoDataUrls.length > maxUploadedPhotos) return send(res, 400, { error: 'Attach no more than 3 photos.' });
+  const photoBytes = photoDataUrls.map(decodeStoredJpeg);
+  if (photoBytes.some((bytes) => !bytes)) return send(res, 400, { error: 'Each attached photo must be a valid JPEG under 2 MB.' });
+  for (const bytes of photoBytes) {
     try {
-      uploadedPath = await uploadPrivatePhoto(database, 'reports', bytes);
-      photoPath = uploadedPath;
+      const path = await uploadPrivatePhoto(database, 'reports', bytes);
+      uploadedPaths.push(path);
+      photoPaths.push(path);
     } catch {
-      return send(res, 503, { error: 'Could not store the report photo. Please try again.' });
+      await Promise.all(uploadedPaths.map((path) => removePrivatePhoto(database, path).catch(() => false)));
+      return send(res, 503, { error: 'Could not store all report photos. Please try again.' });
     }
   }
 
   try {
     const record = await insertRecord(database, 'reports', {
+      owner_id: owner.id,
       report_code: body.reportCode,
+      observed_at: new Date(body.observedAt).toISOString(),
       animal: body.animal,
       location: body.location.trim(),
       landmark: body.landmark.trim(),
       observations: body.observations.trim(),
       photo_name: body.photoName || null,
-      photo_path: photoPath,
+      photo_path: photoPaths[0] || null,
+      photo_paths: photoPaths,
       analysis_id: body.analysisId || null,
       status: 'prepared'
     });
     return send(res, 201, { reportId: record.id, createdAt: record.created_at, status: 'recorded' });
   } catch {
-    if (uploadedPath) await removePrivatePhoto(database, uploadedPath).catch(() => false);
+    await Promise.all(uploadedPaths.map((path) => removePrivatePhoto(database, path).catch(() => false)));
     return send(res, 503, { error: 'The report could not be recorded. Please retry; no server record was created.' });
   }
 }

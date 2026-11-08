@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import analyzeHandler from './api/analyze.js';
 import reportsHandler from './api/reports.js';
+import myReportsHandler from './api/my-reports.js';
 
 function localApiPlugin() {
   return {
@@ -12,6 +13,9 @@ function localApiPlugin() {
       });
       server.middlewares.use('/api/reports', (req, res, next) => {
         reportsHandler(req, res).catch(next);
+      });
+      server.middlewares.use('/api/my-reports', (req, res, next) => {
+        myReportsHandler(req, res).catch(next);
       });
     }
   };
@@ -30,6 +34,9 @@ export default defineConfig(({ mode }) => {
   }
   if (localEnv.SUPABASE_SECRET_KEY && !process.env.SUPABASE_SECRET_KEY) {
     process.env.SUPABASE_SECRET_KEY = localEnv.SUPABASE_SECRET_KEY;
+  }
+  if (localEnv.SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
+    process.env.SUPABASE_ANON_KEY = localEnv.SUPABASE_ANON_KEY;
   }
 
   return {

@@ -1,4 +1,4 @@
-import { decodeStoredJpeg, getSupabaseConfig, insertRecord, removePrivatePhoto, uploadPrivatePhoto } from '../server/persistence.js';
+import { authenticateUser, decodeStoredJpeg, getSupabaseConfig, insertRecord, removePrivatePhoto, uploadPrivatePhoto } from '../server/persistence.js';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_ANIMALS = new Set(['Dog', 'Cat', 'Bird', 'Other / unsure']);
@@ -59,8 +59,11 @@ export default async function handler(req, res) {
 
   const database = getSupabaseConfig();
   if (!process.env.OPENAI_API_KEY || !database) {
-    return send(res, 503, { error: 'AI analysis and secure record storage are not configured. Set OPENAI_API_KEY, SUPABASE_URL, and SUPABASE_SECRET_KEY on the server.' });
+    return send(res, 503, { error: 'AI analysis and secure record storage are not configured. Set OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SECRET_KEY on the server.' });
   }
+  let owner;
+  try { owner = await authenticateUser(database, req); } catch { return send(res, 503, { error: 'Could not verify your account. Please try again.' }); }
+  if (!owner) return send(res, 401, { error: 'Sign in to save a private photo review.' });
 
   let body;
   try {
@@ -151,6 +154,7 @@ export default async function handler(req, res) {
     try {
       photoPath = await uploadPrivatePhoto(database, 'scans', image.bytes);
       const record = await insertRecord(database, 'photo_analyses', {
+        owner_id: owner.id,
         animal: body.animal,
         image_kind: analysis.image_kind,
         image_quality: analysis.image_quality,
