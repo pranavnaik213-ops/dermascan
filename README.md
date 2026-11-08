@@ -24,6 +24,7 @@ Set these public build variables in Vercel for browser sign-in (the anon key is 
 
 - `VITE_SUPABASE_URL` — same Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` — same public anon key
+- `VITE_OVERPASS_ENDPOINT` — optional OpenStreetMap Overpass endpoint override for the nearby directory
 
 Never set `SUPABASE_SECRET_KEY` or `OPENAI_API_KEY` with a `VITE_` prefix.
 
@@ -31,9 +32,15 @@ Never set `SUPABASE_SECRET_KEY` or `OPENAI_API_KEY` with a `VITE_` prefix.
 
 Users can create an account or sign in under **My records**. The API verifies each Supabase session and filters dashboard, update, and delete operations by the authenticated user ID. No unauthenticated report listing or record mutation endpoint is provided. Row Level Security is enabled, and browser roles have no table access.
 
-Signed-in users can submit private reports with a photo, search report history, mark follow-up status, download a JSON receipt, delete an individual record, or delete all account reports and photo reviews. Stored records and photos remain until the user deletes them. Users can also clear the draft and receipts saved in the current browser; this does not affect server records. Reports are not sent to a rescue service. Nothing is dispatched.
+Signed-in users can submit private reports with photos, search report history, mark follow-up status, download a JSON receipt, delete an individual record, or delete all account reports and photo reviews. Stored records and photos remain until the user deletes them. Users can also clear the draft and receipts saved in the current browser; this does not affect server records. Reports are never sent automatically or dispatched.
 
-Draft fields and local receipt copies stay in the current browser. Users can prepare and download a local report without an account; the interface labels it local-only. The JSON receipt includes the photo filename but not image bytes. Signed-in server reports store attached photos in a private bucket.
+Draft fields and local receipt copies stay in the current browser. Users can prepare and download a local report without an account; the interface labels it local-only. The JSON receipt includes photo filenames but not image bytes. Signed-in server reports store attached photos in a private bucket. Users may choose a nearby organization and prepare an email draft themselves; they review and send it from their email app.
+
+## Nearby veterinary practices and animal shelters
+
+The **Nearby care** directory asks for browser location only after the user selects **Find care near me**. It rounds the search center to roughly 100 metres and queries the configured OpenStreetMap Overpass endpoint for veterinary practices and animal-shelter listings within 15 km. DermaScan keeps the rounded center and results in memory for up to 15 minutes to avoid repeated queries; it does not save the location to the account or browser storage. OSM map tiles and data are attributed in the directory. Coverage depends on community mapping, so listing details and availability should be confirmed directly.
+
+If a listing includes an email address, a report created in the current session offers **Prepare report email**. This opens the user's email app with a draft addressed to that selected listing. The user reviews and sends it themselves; DermaScan does not auto-send or dispatch reports. The message contains report text and photo filenames, not photo attachments; the user must attach images themselves. A listing contact address is community-provided and is not independently verified.
 
 ## Photo review and privacy
 

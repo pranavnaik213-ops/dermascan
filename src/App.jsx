@@ -5,6 +5,7 @@ import {
   ShieldCheck, Stethoscope, Trash2, Upload, UserRound, X
 } from 'lucide-react';
 import { getAuthConfig, privateApiFetch, readSession, signIn, signOut, signUp } from './auth.js';
+import NearbyCare from './components/NearbyCare.jsx';
 import './App.css';
 
 const REPORTS_KEY = 'dermascan_reports_v1';
@@ -118,6 +119,7 @@ function App() {
   const [dashboardError, setDashboardError] = useState('');
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(() => Boolean(readSession()));
   const [observedAt, setObservedAt] = useState(isDateTimeValue(savedDraft.observedAt) ? savedDraft.observedAt : localDateTimeValue());
+  const [sharingReport, setSharingReport] = useState(null);
   const fileInput = useRef(null);
   const reportInput = useRef(null);
   const mainContent = useRef(null);
@@ -259,6 +261,7 @@ function App() {
           saveStored(REPORTS_KEY, remaining);
           return remaining;
         });
+        setSharingReport((current) => current?.serverRecordId === id ? null : current);
       } else setServerAnalyses((current) => current.filter((analysisItem) => analysisItem.id !== id));
       setAuthMessage(result.photoRetained
         ? 'The photo review was deleted. Its photo remains attached to a saved report; delete that report to remove the photo too.'
@@ -277,6 +280,7 @@ function App() {
       if (!response.ok) throw new Error(result.error || 'Could not delete account records.');
       setServerReports([]);
       setServerAnalyses([]);
+      setSharingReport(null);
       setReports((current) => {
         const remaining = current.filter((report) => report.localOwnerId !== session.user?.id);
         saveStored(REPORTS_KEY, remaining);
@@ -305,6 +309,7 @@ function App() {
     objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
     objectUrls.current.clear();
     setReportPhotos([]);
+    setSharingReport(null);
     setPhoto(null);
     setAnalysis(null);
     setAnalysisId(null);
@@ -555,7 +560,7 @@ function App() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not record this report on the server.');
       report.serverRecordId = result.reportId;
-      report.status = 'Recorded in the secure DermaScan database; not sent to a rescue service.';
+      report.status = 'Recorded in the secure DermaScan database; sharing is optional.';
     } catch (error) {
       recordError = error.message || 'Could not reach the report server.';
       report.status = 'Not recorded on the server. Local copy only.';
@@ -568,12 +573,13 @@ function App() {
     setStorageAvailable(saveStored(REPORTS_KEY, next));
     setNotice(recordError
       ? `The report was downloaded locally but not recorded on the server: ${recordError}`
-      : 'Report recorded securely. It has not been sent to a rescue service.');
+      : 'Report recorded securely. Choose a nearby organization below if you want to share it.');
+    setSharingReport(report);
     downloadReport(report);
   };
 
   const navItems = [
-    ['home', 'Overview'], ['photo', 'Photo review'], ['report', 'Prepare a report'], ['dashboard', 'My records'], ['guidance', 'Care guidance']
+    ['home', 'Overview'], ['photo', 'Photo review'], ['report', 'Prepare a report'], ['nearby', 'Nearby care'], ['dashboard', 'My records'], ['guidance', 'Care guidance']
   ];
 
   const filteredReports = serverReports.filter((report) => {
@@ -584,6 +590,9 @@ function App() {
   const visibleLocalReports = reports.filter((report) => session?.user?.id
     ? report.localOwnerId === session.user.id
     : !report.localOwnerId);
+  const reportForSharing = sharingReport && (session?.user?.id
+    ? sharingReport.localOwnerId === session.user.id
+    : !sharingReport.localOwnerId) ? sharingReport : null;
 
   return (
     <div className="site-shell">
@@ -637,6 +646,7 @@ function App() {
               <button className="tool-card" onClick={() => navigate('photo')}><IconMark><FileImage /></IconMark><span className="tool-arrow"><ArrowRight size={18} /></span><h3>Review a photo</h3><p>Preview and organize an image before discussing it with a veterinarian.</p><span className="text-link">Choose a photo <ChevronRight size={15} /></span></button>
               <button className="tool-card" onClick={() => navigate('report')}><IconMark><FileText /></IconMark><span className="tool-arrow"><ArrowRight size={18} /></span><h3>Prepare an incident report</h3><p>Collect an approximate location and the signs you observed in one file.</p><span className="text-link">Create a report <ChevronRight size={15} /></span></button>
               <button className="tool-card" onClick={() => navigate('guidance')}><IconMark><Stethoscope /></IconMark><span className="tool-arrow"><ArrowRight size={18} /></span><h3>Read care guidance</h3><p>Know what information to gather and when to seek urgent veterinary care.</p><span className="text-link">View guidance <ChevronRight size={15} /></span></button>
+              <button className="tool-card" onClick={() => navigate('nearby')}><IconMark><HeartHandshake /></IconMark><span className="tool-arrow"><ArrowRight size={18} /></span><h3>Find nearby care</h3><p>Locate mapped veterinary practices and animal-shelter listings near you.</p><span className="text-link">Search nearby <ChevronRight size={15} /></span></button>
             </div>
           </section>
         </section>}
@@ -676,7 +686,7 @@ function App() {
         </section>}
 
         {page === 'report' && <section className="page-wrap content-page">
-          <div className="page-intro"><span className="eyebrow">REPORT PREPARATION</span><h1>Write down what happened</h1><p>Prepare a report file to share yourself. Nothing is sent to a rescue organization from this website.</p>{!session && <p className="form-message">You can prepare a local copy without an account. Sign in to securely save the report and manage it later. <button type="button" className="inline-link" onClick={() => navigate('dashboard')}>Sign in or create an account</button></p>}</div>
+          <div className="page-intro"><span className="eyebrow">REPORT PREPARATION</span><h1>Write down what happened</h1><p>Prepare your report, then choose whether to share it with a nearby veterinary practice or animal shelter.</p>{!session && <p className="form-message">You can prepare a local copy without an account. Sign in to securely save the report and manage it later. <button type="button" className="inline-link" onClick={() => navigate('dashboard')}>Sign in or create an account</button></p>}</div>
           <div className="report-layout">
             <form className="panel report-form" onSubmit={submitReport}>
               <div className="form-section">
@@ -694,11 +704,14 @@ function App() {
               <div className="form-section"><div className="form-heading"><span>03</span><div><h2>What did you observe?</h2><p>Describe visible signs without guessing a diagnosis.</p></div></div><label className="field-label" htmlFor="observations">Notes <span className="optional-label">Optional</span></label><textarea id="observations" value={observations} onChange={(event) => { setObservations(event.target.value); setDraftPersistenceEnabled(true); }} rows="5" maxLength="1200" placeholder="For example: limping, visible wound, or when you last saw the animal." /><span className="character-count">{observations.length}/1200</span></div>
               {formError && <p id="report-form-error" className="form-message error-message" role="alert">{formError}</p>}{notice && <p className="form-message success-message" role="status">{notice}</p>}
               <button className="button button-primary button-large" type="submit" disabled={isSubmittingReport}><ArrowDownToLine size={18} /> {isSubmittingReport ? 'Recording report…' : 'Record and download report'}</button>
-              <p className="form-footnote">The site attempts to record your report and photo in DermaScan’s private database. If it can’t, you’ll receive a local-download fallback notice. It does not dispatch a rescue service.</p>
+              {reportForSharing && <div className="share-report-callout"><div><strong>Report ready to share</strong><p>Find a nearby organization and review an email draft before sending it from your email app.</p></div><button type="button" className="button button-secondary" onClick={() => navigate('nearby')}>Find nearby care <MapPin size={16} /></button></div>}
+              <p className="form-footnote">With an account, the report and photos are saved privately. Otherwise you get a local copy. Sharing is optional and only starts when you choose an organization and prepare an email; DermaScan does not dispatch reports automatically.</p>
             </form>
             <aside className="panel side-panel report-side"><span className="panel-kicker">Before you share</span><h2>Check the details</h2><p>Confirm the location and describe only what you directly observed. Do not approach an animal that seems frightened or injured.</p><div className="notice-box"><ShieldCheck size={17} /><p><strong>Private storage.</strong> Drafts stay in this browser. Signed-in reports/photos are private to your account and kept until you delete them. You can delete one record or all records from My records. If storage fails, the download is marked local-only.</p></div><h3>Recent report receipts</h3>{visibleLocalReports.length === 0 ? <p className="empty-state">No local report receipts for this account on this device.</p> : <ul className="saved-list">{visibleLocalReports.slice(0, 4).map((report) => <li key={report.id}><div><strong>{report.animal} · {report.location}</strong><small>{new Date(report.createdAt).toLocaleDateString()} · {report.status.startsWith('Recorded') ? 'Server recorded' : 'Local copy only'}</small></div><button type="button" className="icon-button" aria-label={`Download report ${report.id}`} onClick={() => downloadReport(report)}><ArrowDownToLine size={17} /></button></li>)}</ul>}{!storageAvailable && <p className="field-error" role="status">Browser storage is unavailable. Download reports to keep a copy.</p>}<button type="button" className="button button-secondary full-width clear-device-button" onClick={clearThisDevice}>Clear this device’s draft and receipts</button></aside>
           </div>
         </section>}
+
+        {page === 'nearby' && <NearbyCare report={reportForSharing} />}
 
         {page === 'dashboard' && <section className="page-wrap content-page dashboard-page">
           <div className="page-intro"><span className="eyebrow">PRIVATE ACCOUNT</span><h1>My records</h1><p>Manage reports and photo reviews saved to your account. Records remain private and are kept until you delete them.</p></div>
@@ -732,7 +745,7 @@ function App() {
         </section>
       </div>}
 
-      <footer className="site-footer"><div className="footer-main"><a className="brand footer-brand" href="#home" onClick={(event) => { event.preventDefault(); navigate('home'); }}><span className="brand-symbol"><PawPrint size={19} /></span><span>derma<span className="brand-accent">scan</span></span></a><p>Clear, careful tools for documenting animal welfare concerns.</p><p className="footer-disclaimer">Not a diagnostic or emergency service. Submitted records are kept privately when backend storage is configured and are never dispatched to rescue groups.</p></div><div className="footer-links"><span>Explore</span>{navItems.map(([id, label]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}</div><div className="footer-bottom"><span>© {currentYear} DermaScan</span><span>Made for clearer, more responsible care.</span></div></footer>
+      <footer className="site-footer"><div className="footer-main"><a className="brand footer-brand" href="#home" onClick={(event) => { event.preventDefault(); navigate('home'); }}><span className="brand-symbol"><PawPrint size={19} /></span><span>derma<span className="brand-accent">scan</span></span></a><p>Clear, careful tools for documenting animal welfare concerns.</p><p className="footer-disclaimer">Not a diagnostic or emergency service. Reports are not dispatched automatically. You choose whether to prepare an email to a local care provider.</p></div><div className="footer-links"><span>Explore</span>{navItems.map(([id, label]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}</div><div className="footer-bottom"><span>© {currentYear} DermaScan</span><span>Made for clearer, more responsible care.</span></div></footer>
     </div>
   );
 }
