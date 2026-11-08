@@ -1,0 +1,103 @@
+{
+  "status": "research_only_not_for_customer_or_clinical_use",
+  "dataset": "https://data.mendeley.com/datasets/5dbht54kw7/1",
+  "dataset_doi": "10.17632/5dbht54kw7.1",
+  "dataset_license": "CC BY 4.0; cite Hwang et al. (2022), DOI 10.17632/5dbht54kw7.1",
+  "input_images": "one standard RGB pic0.jpg image per case folder; multispectral images excluded",
+  "cases": 62,
+  "source_dataset_cases_reported_by_paper": 95,
+  "labeled_cases_available_in_archive": 62,
+  "unlabeled_case_folders_excluded": 33,
+  "case_grouped_folds": 5,
+  "seed": 42,
+  "feature_extractor": "ImageNet pretrained ResNet18 (frozen); logistic regression head",
+  "class_counts": {
+    "allergic_dermatosis": 13,
+    "bacterial_dermatosis": 12,
+    "fungal_infection": 11,
+    "healthy": 26
+  },
+  "accuracy": 0.3064516129032258,
+  "balanced_accuracy": 0.2695221445221445,
+  "macro_f1": 0.2718156843156843,
+  "majority_class_baseline_accuracy": 0.41935483870967744,
+  "classes": [
+    "allergic_dermatosis",
+    "bacterial_dermatosis",
+    "fungal_infection",
+    "healthy"
+  ],
+  "confusion_matrix_rows_true_cols_predicted": [
+    [
+      3,
+      1,
+      2,
+      7
+    ],
+    [
+      1,
+      4,
+      1,
+      6
+    ],
+    [
+      3,
+      1,
+      1,
+      6
+    ],
+    [
+      6,
+      4,
+      5,
+      11
+    ]
+  ],
+  "per_class_report": {
+    "allergic_dermatosis": {
+      "precision": 0.23076923076923078,
+      "recall": 0.23076923076923078,
+      "f1-score": 0.23076923076923078,
+      "support": 13.0
+    },
+    "bacterial_dermatosis": {
+      "precision": 0.4,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.36363636363636365,
+      "support": 12.0
+    },
+    "fungal_infection": {
+      "precision": 0.1111111111111111,
+      "recall": 0.09090909090909091,
+      "f1-score": 0.1,
+      "support": 11.0
+    },
+    "healthy": {
+      "precision": 0.36666666666666664,
+      "recall": 0.4230769230769231,
+      "f1-score": 0.39285714285714285,
+      "support": 26.0
+    },
+    "accuracy": 0.3064516129032258,
+    "macro avg": {
+      "precision": 0.27713675213675215,
+      "recall": 0.2695221445221445,
+      "f1-score": 0.2718156843156843,
+      "support": 62.0
+    },
+    "weighted avg": {
+      "precision": 0.29928315412186385,
+      "recall": 0.3064516129032258,
+      "f1-score": 0.3012568077084206,
+      "support": 62.0
+    }
+  },
+  "limitations": [
+    "The source paper reports 95 dogs, but this archive contains labels for only 62 case folders; unlabeled folders were excluded.",
+    "Class-specific samples in this training run range from 11 to 26; estimates are unstable.",
+    "Cross-validation is internal to one small dataset and is not external validation.",
+    "Images and labels reflect one study/site and may not represent customer phone photos or other regions.",
+    "The classes are broad study labels, not confirmed diagnoses for new animals.",
+    "This prototype is dog-only and must not be used to guide treatment or urgent-care decisions."
+  ]
+}
