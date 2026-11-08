@@ -4,7 +4,6 @@ import L from 'leaflet';
 import { Building2, ExternalLink, HeartHandshake, LocateFixed, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
-const OVERPASS_ENDPOINT = import.meta.env.VITE_OVERPASS_ENDPOINT || 'https://overpass-api.de/api/interpreter';
 const SEARCH_RADIUS_METERS = 15000;
 const SEARCH_RADIUS_KM = SEARCH_RADIUS_METERS / 1000;
 let nearbyCache = null;
@@ -126,15 +125,19 @@ export default function NearbyCare({ report }) {
       setIsSearching(true);
       setHasSearched(true);
       setLastSearchAt(now);
-      const query = `[out:json][timeout:20];(nwr(around:${SEARCH_RADIUS_METERS},${center.lat},${center.lng})["amenity"="veterinary"];nwr(around:${SEARCH_RADIUS_METERS},${center.lat},${center.lng})["amenity"="animal_shelter"];nwr(around:${SEARCH_RADIUS_METERS},${center.lat},${center.lng})["social_facility"="animal_shelter"];);out center tags 100;`;
       try {
-        const response = await fetch(OVERPASS_ENDPOINT, {
+        const response = await fetch('/api/nearby', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-          body: new URLSearchParams({ data: query }),
-          signal: AbortSignal.timeout(25_000)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude: center.lat, longitude: center.lng }),
+          signal: AbortSignal.timeout(22_000)
         });
-        if (!response.ok) throw new Error(response.status === 429 ? 'The map service is busy. Wait a moment and try again.' : 'The nearby directory is temporarily unavailable. Try again later.');
+        if (!response.ok) {
+          const failure = await response.json().catch(() => ({}));
+          throw new Error(failure.error || (response.status === 429
+            ? 'Too many nearby searches. Wait a minute and try again.'
+            : 'The nearby directory is temporarily unavailable. Try again later.'));
+        }
         const result = await response.json();
         const unique = new Map();
         for (const element of result.elements || []) {
@@ -148,7 +151,7 @@ export default function NearbyCare({ report }) {
         nearbyCache = { center, places: nearbyPlaces, savedAt: Date.now() };
       } catch (searchError) {
         setError(searchError.name === 'TimeoutError' || searchError.name === 'AbortError'
-          ? 'The map service took too long to respond. Try again later or use the map search links.'
+          ? 'Nearby listings took too long to load. Try again shortly or use the map search links.'
           : searchError.message || 'Could not load nearby care providers.');
       } finally { setIsSearching(false); setIsLocating(false); }
     }, (locationError) => {

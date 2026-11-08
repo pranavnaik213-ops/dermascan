@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from 'vite';
 import analyzeHandler from './api/analyze.js';
 import reportsHandler from './api/reports.js';
 import myReportsHandler from './api/my-reports.js';
+import nearbyHandler from './api/nearby.js';
 
 function localApiPlugin() {
   return {
@@ -16,6 +17,9 @@ function localApiPlugin() {
       });
       server.middlewares.use('/api/my-reports', (req, res, next) => {
         myReportsHandler(req, res).catch(next);
+      });
+      server.middlewares.use('/api/nearby', (req, res, next) => {
+        nearbyHandler(req, res).catch(next);
       });
     }
   };

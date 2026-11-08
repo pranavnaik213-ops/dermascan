@@ -24,7 +24,6 @@ Set these public build variables in Vercel for browser sign-in (the anon key is 
 
 - `VITE_SUPABASE_URL` — same Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` — same public anon key
-- `VITE_OVERPASS_ENDPOINT` — optional OpenStreetMap Overpass endpoint override for the nearby directory
 
 Never set `SUPABASE_SECRET_KEY` or `OPENAI_API_KEY` with a `VITE_` prefix.
 
@@ -38,7 +37,7 @@ Draft fields and local receipt copies stay in the current browser. Users can pre
 
 ## Nearby veterinary practices and animal shelters
 
-The **Nearby care** directory asks for browser location only after the user selects **Find care near me**. It rounds the search center to roughly 100 metres and queries the configured OpenStreetMap Overpass endpoint for veterinary practices and animal-shelter listings within 15 km. DermaScan keeps the rounded center and results in memory for up to 15 minutes to avoid repeated queries; it does not save the location to the account or browser storage. OSM map tiles and data are attributed in the directory. Coverage depends on community mapping, so listing details and availability should be confirmed directly.
+The **Nearby care** directory asks for browser location only after the user selects **Find care near me**. It rounds the search center to roughly 100 metres and sends it to the same-origin `/api/nearby` endpoint, which queries OpenStreetMap Overpass for veterinary practices and animal-shelter listings within 15 km. The server tries a secondary public instance if the primary one is unavailable, and caches nearby results in memory for up to 10 minutes. The approximate location is not saved to the account or browser storage. Optionally set the server-only `OVERPASS_ENDPOINT` to an Overpass interpreter URL. OSM map tiles and data are attributed in the directory. Coverage depends on community mapping, so listing details and availability should be confirmed directly.
 
 If a listing includes an email address, a report created in the current session offers **Prepare report email**. This opens the user's email app with a draft addressed to that selected listing. The user reviews and sends it themselves; DermaScan does not auto-send or dispatch reports. The message contains report text and photo filenames, not photo attachments; the user must attach images themselves. A listing contact address is community-provided and is not independently verified.
 
@@ -55,6 +54,7 @@ Report forms accept up to three photos. Images are resized in the browser before
 - `GET /api/my-reports` — authenticated owner-scoped report and photo-review listing
 - `PATCH /api/my-reports` — authenticated owner-scoped follow-up status update
 - `DELETE /api/my-reports` — authenticated owner-scoped deletion of records and photos
+- `POST /api/nearby` — rate-limited nearby listing lookup with upstream failover and short-lived server cache
 
 The Vite development server exposes the same routes locally.
 
