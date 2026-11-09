@@ -1,11 +1,27 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import fs from 'fs';
+
+function copyToHomepagePlugin() {
+  return {
+    name: 'copy-to-homepage',
+    closeBundle() {
+      try {
+        if (fs.existsSync('dist')) {
+          fs.cpSync('dist', 'homepage', { recursive: true });
+        }
+      } catch (err) {
+        console.warn('[Build] Note copying to homepage:', err.message);
+      }
+    }
+  };
+}
 
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), copyToHomepagePlugin()],
   build: {
-    outDir: 'homepage',
+    outDir: 'dist',
     emptyOutDir: true
   },
   server: {

@@ -9,7 +9,7 @@
     "dev:all": "concurrently \"node server/server.js\" \"vite\"",
     "start": "node server/server.js",
     "build": "vite build",
-    "lint": "oxlint --ignore-pattern \"homepage/**\"",
+    "lint": "oxlint --ignore-pattern \"homepage/**\" --ignore-pattern \"dist/**\"",
     "preview": "vite preview"
   },
   "dependencies": {
