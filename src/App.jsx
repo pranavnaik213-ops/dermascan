@@ -6,6 +6,7 @@ import ReportAnimal from './components/ReportAnimal';
 import NearbyCare from './components/NearbyCare';
 import Awareness from './components/Awareness';
 import Footer from './components/Footer';
+import Interactive3DScene from './components/Interactive3DScene';
 import { api } from './services/api';
 import './App.css';
 
@@ -28,6 +29,7 @@ export default function App() {
 
   return (
     <div className="site-shell">
+      <Interactive3DScene />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 

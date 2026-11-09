@@ -10,6 +10,7 @@ import {
   Upload
 } from 'lucide-react';
 import CameraModal from './CameraModal';
+import Interactive3DCard from './Interactive3DCard';
 import { api } from '../services/api';
 import { PRESET_DETECTION_SAMPLES } from '../data/mockData';
 
@@ -188,28 +189,31 @@ export default function AIDetection({ onPhotoReady }) {
                   <div style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(15, 23, 42, 0.78)',
+                    background: 'rgba(15, 23, 42, 0.82)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
                     color: '#fff',
-                    backdropFilter: 'blur(2px)'
+                    backdropFilter: 'blur(3px)',
+                    overflow: 'hidden'
                   }}>
+                    <div className="scanner-laser-line" />
                     <div style={{
-                      width: '42px',
-                      height: '42px',
-                      border: '3px solid #22c55e',
+                      width: '46px',
+                      height: '46px',
+                      border: '3px solid #14b8a6',
                       borderTopColor: 'transparent',
                       borderRadius: '50%',
-                      animation: 'spin 0.8s linear infinite'
+                      animation: 'spin 0.75s linear infinite',
+                      boxShadow: '0 0 15px rgba(20, 184, 166, 0.5)'
                     }} />
-                    <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.02em', color: '#f0fdfa' }}>
                       Screening image with AI...
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      Analyzing photo for active lesions & dermatological patterns
+                    <div style={{ fontSize: '12px', color: '#99f6e4' }}>
+                      Scanning neural feature maps for active lesions & dermatological patterns
                     </div>
                   </div>
                 )}
@@ -481,44 +485,74 @@ export default function AIDetection({ onPhotoReady }) {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-          gap: '10px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '12px'
         }}>
           {PRESET_DETECTION_SAMPLES.map((preset) => {
             const isSelected = selectedPresetId === preset.id;
             const isPresetHealthy = preset.conditionKey === 'Healthy';
             return (
-              <button
+              <Interactive3DCard
                 key={preset.id}
-                type="button"
-                onClick={() => selectPreset(preset)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: isSelected ? '2px solid var(--brand)' : '1px solid var(--border)',
-                  background: isSelected ? 'var(--brand-soft)' : 'var(--surface)',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
+                maxTilt={8}
+                scale={1.03}
+                style={{ borderRadius: '10px' }}
               >
-                <img
-                  src={preset.photoUrl}
-                  alt={preset.title}
-                  style={{ width: '38px', height: '38px', borderRadius: '6px', objectFit: 'cover' }}
-                />
-                <div style={{ overflow: 'hidden' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: isPresetHealthy ? '#166534' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {preset.prediction}
+                <button
+                  type="button"
+                  onClick={() => selectPreset(preset)}
+                  className={`preset-sample-btn ${isSelected ? 'is-selected' : ''}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '11px',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: isSelected ? '2px solid var(--brand)' : '1px solid var(--border)',
+                    background: isSelected ? 'var(--brand-soft)' : 'var(--surface)',
+                    boxShadow: isSelected 
+                      ? '0 6px 14px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255,255,255,0.9)'
+                      : '0 2px 6px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255,255,255,0.8)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s ease, background-color 0.15s ease'
+                  }}
+                >
+                  <img
+                    src={preset.photoUrl}
+                    alt={preset.title}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: 750,
+                      color: isPresetHealthy ? '#166534' : 'var(--ink)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {preset.prediction}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: isPresetHealthy ? '#15803d' : 'var(--muted)'
+                    }}>
+                      {isPresetHealthy ? 'Healthy Control' : `${preset.confidence}% confidence`}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: isPresetHealthy ? '#15803d' : 'var(--muted)' }}>
-                    {isPresetHealthy ? 'Healthy Control' : `${preset.confidence}% confidence`}
-                  </div>
-                </div>
-              </button>
+                </button>
+              </Interactive3DCard>
             );
           })}
         </div>
