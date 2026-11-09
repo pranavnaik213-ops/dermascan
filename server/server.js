@@ -421,14 +421,7 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
         allProbabilities,
         qualityCheck: { passed: true, brightness: 92, sharpness: 90, visibility: 94, message: "Optimal Image Quality Verified (Benchmark Clinical Standard)" },
         roiBox: isHealthy ? null : { top: '24%', left: '26%', width: '48%', height: '48%' },
-        inferenceTimeMs: 120,
-        modelMetrics: {
-          version: "DermaScan-Net v3.0 (EfficientNetV2-S Deep Transfer)",
-          datasetAccuracy: 94.0,
-          macroF1: 0.923,
-          auroc: 0.9842,
-          evaluatedSamples: 3371
-        }
+        inferenceTimeMs: 120
       });
     }
 

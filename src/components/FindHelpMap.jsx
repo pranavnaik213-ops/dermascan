@@ -806,37 +806,7 @@ export default function FindHelpMap({ cases, onAcceptCase, currentRole: _current
 
           </MapContainer>
 
-          {/* Floating Map Status Strip */}
-          <div style={{
-            position: 'absolute',
-            bottom: '14px',
-            left: '14px',
-            zIndex: 999,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            padding: '8px 14px',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '0.75rem',
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'center',
-            color: 'var(--text-main)',
-            boxShadow: 'var(--shadow-md)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }} />
-              <span>You</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span>{activeCategory === 'ngos' ? '🛡️ Rescue NGO' : '🏥 Verified Hospital'}</span>
-            </div>
-            {(activeCategory === 'hospitals' || activeCategory === 'ngos') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: activeCategory === 'ngos' ? '#0d9488' : '#059669', fontWeight: 700 }}>
-                <span>╌╌ Driving Route</span>
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* Right Column: Hospital Info, NGO Details, or Case Panel */}

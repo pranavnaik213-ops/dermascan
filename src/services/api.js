@@ -482,14 +482,7 @@ export const api = {
       allProbabilities,
       qualityCheck: canvasQuality || { passed: true, brightness: 92, sharpness: 90, visibility: 94, message: "Optimal Image Quality Verified (ISO Balanced, Clear Focus)" },
       roiBox: isHealthy ? null : (computedRoiBox || payload.roiBox || { top: '24%', left: '26%', width: '48%', height: '48%' }),
-      inferenceTimeMs: 142,
-      modelMetrics: {
-        version: "DermaScan-Net v3.0 (EfficientNetV2-S Deep Transfer)",
-        datasetAccuracy: 94.0,
-        macroF1: 0.923,
-        auroc: 0.9842,
-        evaluatedSamples: 3371
-      }
+      inferenceTimeMs: 142
     };
   },
 

@@ -2,8 +2,6 @@ import React, { useRef, useState } from 'react';
 import {
   ArrowRight,
   Camera,
-  CheckCircle2,
-  Database,
   ImagePlus,
   Info,
   ShieldCheck,
@@ -125,20 +123,10 @@ export default function AIDetection({ onPhotoReady }) {
     <section className="page-wrap content-page ai-detection-page" aria-labelledby="ai-detection-title">
       {/* Page Header */}
       <header className="page-intro page-intro-left">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          <span className="eyebrow"><Sparkles size={14} aria-hidden="true" /> VETERINARY NEURAL DIAGNOSTICS</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: '#dcfce7', color: '#166534' }}>
-            DermaScan-Net v3.0 (94.0% Accuracy)
-          </span>
-          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1' }}>
-            PyTorch EfficientNetV2-S
-          </span>
-        </div>
-        <h1 id="ai-detection-title">AI Animal Skin Disease Classifier</h1>
+        <span className="eyebrow"><Sparkles size={14} aria-hidden="true" /> VETERINARY SCREENING</span>
+        <h1 id="ai-detection-title">Animal Skin Disease Classifier</h1>
         <p>
-          Upload an animal photo to screen for dermatological lesions. Our deep neural network is trained on 
-          <strong> 3,371 real veterinary images</strong> from online datasets (Mendeley Data & Howl Vision Multi-Center Benchmark) 
-          to classify 6 conditions with <strong>94.0% accuracy</strong>. Healthy animals are verified with intact epidermal integrity and zero false disease alerts.
+          Upload an animal photo to screen for dermatological lesions. The screening system evaluates the image for active inflammation, alopecia, and skin conditions.
         </p>
       </header>
 
@@ -147,129 +135,98 @@ export default function AIDetection({ onPhotoReady }) {
         {/* Left Column: Image Canvas & Controls */}
         <div className="panel photo-review-panel" style={{ display: 'flex', flexDirection: 'column' }}>
           {photo ? (
-            <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', textAlign: 'center' }}>
-              <img
-                src={photo.dataUrl || photo.photoUrl}
-                alt="Animal skin subject"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  maxHeight: '440px',
-                  objectFit: 'contain',
-                  margin: '0 auto'
-                }}
-              />
-
-              {/* Status Overlay: ONLY draw red lesion box if a real lesion was detected (NEVER on healthy skin!) */}
-              {analysisResult?.roiBox && !isHealthyResult && (
-                <div
+            <>
+              <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', textAlign: 'center' }}>
+                <img
+                  src={photo.dataUrl || photo.photoUrl}
+                  alt="Animal skin subject"
                   style={{
-                    position: 'absolute',
-                    top: analysisResult.roiBox.top,
-                    left: analysisResult.roiBox.left,
-                    width: analysisResult.roiBox.width,
-                    height: analysisResult.roiBox.height,
-                    border: '2px solid #ef4444',
-                    background: 'rgba(239, 68, 68, 0.18)',
-                    boxShadow: '0 0 12px rgba(239, 68, 68, 0.6), inset 0 0 8px rgba(239, 68, 68, 0.3)',
-                    borderRadius: '4px',
-                    pointerEvents: 'none',
-                    transition: 'all 0.3s ease'
+                    display: 'block',
+                    width: '100%',
+                    maxHeight: '440px',
+                    objectFit: 'contain',
+                    margin: '0 auto'
                   }}
-                >
-                  <span style={{
-                    position: 'absolute',
-                    top: '-20px',
-                    left: '0',
-                    background: '#ef4444',
-                    color: '#fff',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    padding: '1px 6px',
-                    borderRadius: '3px',
-                    letterSpacing: '0.04em'
-                  }}>
-                    DETECTED LESION REGION
-                  </span>
-                </div>
-              )}
+                />
 
-              {/* Reassuring green banner overlay for healthy skin */}
-              {analysisResult && isHealthyResult && (
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  left: '12px',
-                  background: 'rgba(22, 163, 74, 0.92)',
-                  color: '#fff',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                  backdropFilter: 'blur(4px)'
-                }}>
-                  <CheckCircle2 size={15} /> Normal Epidermal Integrity Verified (No Lesions Found)
-                </div>
-              )}
+                {/* Status Overlay: ONLY draw red lesion box if a real lesion was detected (NEVER on healthy skin!) */}
+                {analysisResult?.roiBox && !isHealthyResult && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: analysisResult.roiBox.top,
+                      left: analysisResult.roiBox.left,
+                      width: analysisResult.roiBox.width,
+                      height: analysisResult.roiBox.height,
+                      border: '2px solid #ef4444',
+                      background: 'rgba(239, 68, 68, 0.18)',
+                      boxShadow: '0 0 12px rgba(239, 68, 68, 0.6), inset 0 0 8px rgba(239, 68, 68, 0.3)',
+                      borderRadius: '4px',
+                      pointerEvents: 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute',
+                      top: '-20px',
+                      left: '0',
+                      background: '#ef4444',
+                      color: '#fff',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '3px',
+                      letterSpacing: '0.04em'
+                    }}>
+                      DETECTED LESION REGION
+                    </span>
+                  </div>
+                )}
 
-              {/* Scanning status banner */}
-              {isAnalyzing && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(15, 23, 42, 0.78)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  color: '#fff',
-                  backdropFilter: 'blur(2px)'
-                }}>
+                {/* Scanning status banner */}
+                {isAnalyzing && (
                   <div style={{
-                    width: '42px',
-                    height: '42px',
-                    border: '3px solid #22c55e',
-                    borderTopColor: 'transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite'
-                  }} />
-                  <div style={{ fontSize: '13px', fontWeight: 600 }}>
-                    Running PyTorch Deep Inference (EfficientNetV2-S)...
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(15, 23, 42, 0.78)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    color: '#fff',
+                    backdropFilter: 'blur(2px)'
+                  }}>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      border: '3px solid #22c55e',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite'
+                    }} />
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                      Screening image with AI...
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      Analyzing photo for active lesions & dermatological patterns
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    Screening image for active dermatological lesions & texture anomalies
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: '8px 12px',
-                background: 'rgba(15, 23, 42, 0.85)',
-                color: '#cbd5e1',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
+              {/* Photo metadata strip under the image */}
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <ImagePlus size={14} /> {photo.name || 'Selected photo'}
                 </span>
                 {analysisResult?.qualityCheck && (
-                  <span style={{ color: analysisResult.qualityCheck.passed ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                    ISO Quality: {analysisResult.qualityCheck.visibility}%
+                  <span style={{ color: analysisResult.qualityCheck.passed ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                    Quality: {analysisResult.qualityCheck.visibility}%
                   </span>
                 )}
               </div>
-            </div>
+            </>
           ) : (
             <div className="photo-review-empty">
               <span className="photo-review-empty-icon"><ImagePlus size={32} aria-hidden="true" /></span>
@@ -349,11 +306,7 @@ export default function AIDetection({ onPhotoReady }) {
             aria-label="Choose an animal photo"
           />
 
-          {/* Model info footer in left panel */}
-          <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border)', fontSize: '11px', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>Architecture: EfficientNetV2-S (384x384)</span>
-            <span>Zero auto-scanning without user action</span>
-          </div>
+
         </div>
 
         {/* Right Column: AI Analysis Results or Guidelines */}
@@ -485,40 +438,6 @@ export default function AIDetection({ onPhotoReady }) {
               </ul>
             </div>
 
-            {/* Veterinary Recommended Protocol */}
-            <div style={{
-              padding: '12px 14px',
-              borderRadius: '7px',
-              background: isHealthyResult ? '#f0fdf4' : '#f8fafc',
-              border: `1px solid ${isHealthyResult ? '#bbf7d0' : '#e2e8f0'}`
-            }}>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                color: isHealthyResult ? '#166534' : 'var(--brand-dark)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                <ShieldCheck size={14} /> Actionable Care Guidelines
-              </span>
-              <p style={{ margin: '6px 0 0', fontSize: '12px', color: isHealthyResult ? '#15803d' : '#334155', lineHeight: '1.6' }}>
-                {isHealthyResult
-                  ? 'No dermatological treatment or medical isolation needed. Maintain standard preventative grooming, balanced omega-3/6 nutrition, and regular tick/flea prophylaxis.'
-                  : analysisResult.recommendedProtocol}
-              </p>
-            </div>
-
-            {/* Dataset Training Provenance Badge */}
-            <div style={{ padding: '10px 12px', borderRadius: '6px', background: '#f1f5f9', fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={16} style={{ flexShrink: 0, color: '#475569' }} />
-              <span>
-                <strong>Trained on Real Data:</strong> Mendeley Data (Hwang et al. 2022, DOI 10.17632/5dbht54kw7.1) + Howl Vision Multi-Center Canine Benchmark (3,371 real images, 94.0% accuracy, 0.923 macro F1). Zero mock/synthetic data.
-              </span>
-            </div>
-
             {/* Proceed CTA Button */}
             <button
               type="button"
@@ -533,22 +452,13 @@ export default function AIDetection({ onPhotoReady }) {
           /* Default Note Panel before scan */
           <aside className="panel photo-review-note">
             <ShieldCheck size={20} aria-hidden="true" />
-            <h2>Clinical AI Skin Classifier</h2>
+            <h2>Photo Screening</h2>
             <p>
-              DermaScan AI leverages an EfficientNetV2-S deep neural network fine-tuned on real clinical veterinary dermatological 
-              imagery. It evaluates 6 distinct conditions:
+              Upload or capture a clear photo of the animal's skin to review for visible lesions, inflammation, or coat loss.
             </p>
-            <ul style={{ listStyleType: 'disc', paddingLeft: '18px', display: 'grid', gap: '6px', margin: '12px 0 16px' }}>
-              <li><strong>Healthy Canine Epidermis:</strong> Intact follicles, clear skin barrier, zero active lesions.</li>
-              <li><strong>Canine Demodectic & Sarcoptic Mange:</strong> Follicular hyperkeratosis and pruritic crusts.</li>
-              <li><strong>Bacterial Dermatitis & Pyoderma:</strong> Collarettes, pustules, and exudative inflammation.</li>
-              <li><strong>Fungal & Malassezia Yeast:</strong> Hyperpigmentation, lichenification, and greasy odor.</li>
-              <li><strong>Microsporum Ringworm:</strong> Annular circular alopecia with high zoonotic transmission risk.</li>
-              <li><strong>Atopic & Flea Allergic Dermatitis:</strong> Symmetrical pruritus and licking fur-staining.</li>
-            </ul>
-            <div style={{ padding: '10px', background: 'var(--brand-soft)', borderRadius: '6px', fontSize: '11px', color: 'var(--brand-dark)' }}>
-              <strong>Zero Auto-Scan Guarantee:</strong> The AI will only analyze an image when you explicitly click "Scan & Analyze with AI". Healthy skin is verified without false alarms.
-            </div>
+            <p style={{ marginTop: '10px' }}>
+              Select a photo using the controls on the left, then click <strong>&quot;Scan &amp; Analyze with AI&quot;</strong> to evaluate the image.
+            </p>
           </aside>
         )}
       </div>

@@ -324,14 +324,7 @@ def analyze_image(image_input: str | Path | Image.Image) -> dict:
         "allProbabilities": all_probs,
         "roiBox": roi_box,
         "qualityCheck": quality,
-        "inferenceTimeMs": elapsed_ms,
-        "modelMetrics": {
-            "version": "DermaScan-Net v3.0 (EfficientNetV2-S Deep Transfer)",
-            "datasetAccuracy": 94.0,
-            "macroF1": 0.923,
-            "auroc": 0.9842,
-            "evaluatedSamples": 3371
-        }
+        "inferenceTimeMs": elapsed_ms
     }
 
 

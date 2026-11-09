@@ -8,12 +8,12 @@ import {
   Printer
 } from 'lucide-react';
 
-export default function CasesTracker({ cases, currentRole, onUpdateStatus }) {
-  const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.id || 'DS-2026-00124');
+export default function CasesTracker({ cases = [], currentRole, onUpdateStatus }) {
+  const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.id || null);
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const activeCase = cases.find(c => c.id === selectedCaseId) || cases[0];
+  const activeCase = cases.find(c => c.id === selectedCaseId) || cases[0] || null;
 
   const filteredCases = cases.filter(c => {
     const matchesFilter = 
