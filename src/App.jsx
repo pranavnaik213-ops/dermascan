@@ -12,10 +12,8 @@ import NgoPortal from './components/NgoPortal';
 import VetPortal from './components/VetPortal';
 import NotificationDrawer from './components/NotificationDrawer';
 import Footer from './components/Footer';
-import Interactive3DScene from './components/Interactive3DScene';
-import ThreeDClickManager from './components/ThreeDClickManager';
-import FloatingEmergencyIsland from './components/FloatingEmergencyIsland';
 import { api } from './services/api';
+import './App.css';
 
 import { INITIAL_CASES } from './data/mockData';
 
@@ -165,12 +163,6 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', position: 'relative', overflowX: 'hidden' }}>
       
-      {/* Real-time 3D Interactive Canvas Background */}
-      <Interactive3DScene />
-
-      {/* Global 3D Interactive Click Waves & Mechanical Haptic Feedback */}
-      <ThreeDClickManager />
-
       {/* Top Role Switcher Header */}
       <div style={{ position: 'relative', zIndex: 10 }}>
         <RoleSwitcher currentRole={currentRole} setRole={setCurrentRole} setActiveTab={setActiveTab} />
@@ -282,12 +274,6 @@ export default function App() {
 
       {/* Footer */}
       <Footer setActiveTab={setActiveTab} />
-
-      {/* Persistent Floating Emergency Island */}
-      <FloatingEmergencyIsland 
-        activeEmergencyCase={cases.find(c => c.urgency === 'Emergency')} 
-        setActiveTab={setActiveTab} 
-      />
 
     </div>
   );
