@@ -18,6 +18,7 @@ import {
 import { PRESET_DETECTION_SAMPLES } from '../data/mockData';
 import Interactive3DCard from './Interactive3DCard';
 import CameraModal from './CameraModal';
+import { api } from '../services/api';
 
 export default function AIDetection({ setActiveTab, onScanComplete, initialScanResult }) {
   const [selectedAnimal, setSelectedAnimal] = useState(initialScanResult?.animalType || 'Dog');
@@ -136,8 +137,8 @@ export default function AIDetection({ setActiveTab, onScanComplete, initialScanR
     }
   };
 
-  // Start Analysis Pipeline
-  const runAnalysis = () => {
+  // Start Analysis Pipeline with backend neural triage
+  const runAnalysis = async () => {
     setIsScanning(true);
     setShowResult(false);
     setScanStep(1);
@@ -146,14 +147,30 @@ export default function AIDetection({ setActiveTab, onScanComplete, initialScanR
     setTimeout(() => setScanStep(3), 1000);
     setTimeout(() => setScanStep(4), 1600);
 
-    setTimeout(() => {
-      setIsScanning(false);
-      setShowResult(true);
-      setScreeningId('SCR-' + Math.floor(100000 + Math.random() * 900000));
-      if (onScanComplete && currentSample.qualityCheck.passed) {
-        onScanComplete(currentSample);
-      }
-    }, 2100);
+    try {
+      const backendResult = await api.detect(uploadedImage, selectedAnimal);
+      setTimeout(() => {
+        setIsScanning(false);
+        setShowResult(true);
+        setScreeningId('SCR-' + Math.floor(100000 + Math.random() * 900000));
+        if (backendResult) {
+          const merged = { ...currentSample, ...backendResult, photoUrl: uploadedImage, title: `${selectedAnimal} Lesion Assessment` };
+          setCurrentSample(merged);
+          if (onScanComplete && merged.qualityCheck?.passed) {
+            onScanComplete(merged);
+          }
+        }
+      }, 2100);
+    } catch {
+      setTimeout(() => {
+        setIsScanning(false);
+        setShowResult(true);
+        setScreeningId('SCR-' + Math.floor(100000 + Math.random() * 900000));
+        if (onScanComplete && currentSample.qualityCheck.passed) {
+          onScanComplete(currentSample);
+        }
+      }, 2100);
+    }
   };
 
   const isZoonotic = currentSample.prediction.toLowerCase().includes('ringworm') || 

@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   Send
 } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function VetPortal({ 
   cases = [], 
@@ -71,8 +72,18 @@ export default function VetPortal({
     showToast(`Prescription preset "${presetName.toUpperCase()}" loaded into clinical notes.`);
   };
 
-  // Sign & Certify Diagnosis
-  const handleSignDiagnosis = () => {
+  // Sign & Certify Diagnosis (persists to backend database)
+  const handleSignDiagnosis = async () => {
+    try {
+      await api.vetVerifyCase(activePatient.id, {
+        notes: doctorNotes,
+        tests,
+        doctorName: "Dr. Preeti Chandrasekhar, MVSc (KSVC #4182)"
+      });
+    } catch (e) {
+      console.warn("Backend vet-verify failed, persisting locally:", e);
+    }
+
     if (setCases) {
       setCases(prev => prev.map(c => {
         if (c.id === activePatient.id) {

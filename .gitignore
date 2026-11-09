@@ -18,6 +18,11 @@ training-output/
 .env.*
 !.env.example
 
+# Uploaded media & temp files
+server/uploads/*
+!server/uploads/.gitkeep
+*.tmp
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

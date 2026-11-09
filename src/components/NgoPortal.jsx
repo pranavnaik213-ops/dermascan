@@ -16,6 +16,7 @@ import {
   Check
 } from 'lucide-react';
 import { MOCK_NGOS } from '../data/mockData';
+import { api } from '../services/api';
 
 export default function NgoPortal({ 
   cases = [], 
@@ -238,7 +239,11 @@ export default function NgoPortal({
             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Shelter Bed Capacity</span>
             <div style={{ display: 'flex', gap: '4px' }}>
               <button 
-                onClick={() => setBedCapacity(prev => Math.max(0, prev - 1))}
+                onClick={() => {
+                  const nextBeds = Math.max(0, bedCapacity - 1);
+                  setBedCapacity(nextBeds);
+                  api.updateNgoBeds(currentNgo.id, nextBeds).catch(() => {});
+                }}
                 className="btn-3d btn-3d-secondary"
                 style={{ padding: '2px 6px', fontSize: '0.7rem' }}
                 title="Decrease"
@@ -246,7 +251,11 @@ export default function NgoPortal({
                 <Minus size={11} />
               </button>
               <button 
-                onClick={() => setBedCapacity(prev => prev + 1)}
+                onClick={() => {
+                  const nextBeds = bedCapacity + 1;
+                  setBedCapacity(nextBeds);
+                  api.updateNgoBeds(currentNgo.id, nextBeds).catch(() => {});
+                }}
                 className="btn-3d btn-3d-secondary"
                 style={{ padding: '2px 6px', fontSize: '0.7rem' }}
                 title="Increase"

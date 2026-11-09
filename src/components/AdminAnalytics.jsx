@@ -31,6 +31,7 @@ import {
   Download
 } from 'lucide-react';
 import { MOCK_NGOS, AI_MODEL_METRICS } from '../data/mockData';
+import { api } from '../services/api';
 
 export default function AdminAnalytics({ 
   cases = [], 
@@ -123,6 +124,24 @@ export default function AdminAnalytics({
     localStorage.setItem('dermascan_admin_ngos_v1', JSON.stringify(ngos));
   }, [ngos]);
 
+  // Load real audit logs and NGOs from persistent backend
+  useEffect(() => {
+    let isMounted = true;
+    api.getAuditLogs().then(logs => {
+      if (isMounted && Array.isArray(logs) && logs.length > 0) {
+        setAuditLogs(logs);
+      }
+    }).catch(() => {});
+
+    api.getNgos().then(serverNgos => {
+      if (isMounted && Array.isArray(serverNgos) && serverNgos.length > 0) {
+        setNgos(serverNgos);
+      }
+    }).catch(() => {});
+
+    return () => { isMounted = false; };
+  }, []);
+
   const showToast = (message, type = 'success') => {
     setAdminToast({ message, type });
     setTimeout(() => setAdminToast(null), 3800);
@@ -192,6 +211,8 @@ export default function AdminAnalytics({
       return ngo;
     }));
 
+    api.updateNgoAmbulance(ngoId, newStatus).catch(() => {});
+
     const targetNgo = ngos.find(n => n.id === ngoId);
     showToast(`${targetNgo?.name || 'NGO'}: Ambulance status set to "${newStatus}"`, 'info');
 
@@ -214,6 +235,7 @@ export default function AdminAnalytics({
     setNgos(prev => prev.map(ngo => {
       if (ngo.id === ngoId) {
         const nextBeds = Math.max(0, (ngo.availableBeds || 0) + delta);
+        api.updateNgoBeds(ngoId, nextBeds).catch(() => {});
         return { ...ngo, availableBeds: nextBeds };
       }
       return ngo;
@@ -222,6 +244,7 @@ export default function AdminAnalytics({
 
   // Emergency SOS Broadcast to All 8 NGOs
   const handleBroadcastSOS = () => {
+    api.broadcastSOS().catch(() => {});
     showToast('🚨 Emergency Broadcast Dispatched to all 8 Connected Bengaluru NGOs & Fleets', 'emergency');
     setAuditLogs(prev => [
       {
@@ -285,6 +308,7 @@ export default function AdminAnalytics({
   // Delete / Dismiss Duplicate Case
   const handleDeleteCase = (caseId) => {
     if (window.confirm(`Are you sure you want to dismiss and archive report ${caseId}?`)) {
+      api.deleteCase(caseId).catch(() => {});
       if (setCases) {
         setCases(prev => prev.filter(c => c.id !== caseId));
       }
@@ -294,6 +318,7 @@ export default function AdminAnalytics({
 
   // Trigger Retraining
   const triggerRetraining = () => {
+    api.triggerRetrain().catch(() => {});
     const timestampStr = new Date().toLocaleTimeString();
     setRetrainingStatus('running');
     setRetrainLogs([
