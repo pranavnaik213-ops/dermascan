@@ -21,7 +21,15 @@ training-output/
 # Uploaded media & temp files
 server/uploads/*
 !server/uploads/.gitkeep
+server/models/*
+!server/models/.gitkeep
+*.pt
 *.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Editor directories and files
 .vscode/*

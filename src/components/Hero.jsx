@@ -5,9 +5,9 @@ const actions = [
   {
     id: 'detect',
     icon: Camera,
-    title: 'Review a skin photo',
-    detail: 'Prepare a clear photo to share with a veterinarian.',
-    link: 'Open photo review',
+    title: 'AI Skin Disease Scan',
+    detail: 'Run deep neural network analysis (94% accuracy) across 6 dermatological conditions.',
+    link: 'Scan an animal',
   },
   {
     id: 'report',

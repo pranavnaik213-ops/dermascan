@@ -20,11 +20,11 @@ function localDateTime() {
 export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) {
   const [draft] = useState(readDraft);
   const photoInput = useRef(null);
-  const [animal, setAnimal] = useState(draft.animal || '');
+  const [animal, setAnimal] = useState(draft.animal || initialPhoto?.animalType || '');
   const [location, setLocation] = useState(draft.location || '');
   const [landmark, setLandmark] = useState(draft.landmark || '');
   const [observedAt, setObservedAt] = useState(draft.observedAt || localDateTime());
-  const [observations, setObservations] = useState(draft.observations || '');
+  const [observations, setObservations] = useState(draft.observations || initialPhoto?.observations || '');
   const [photo, setPhoto] = useState(initialPhoto || null);
   const [coordinates, setCoordinates] = useState(null);
   const [isLocating, setIsLocating] = useState(false);

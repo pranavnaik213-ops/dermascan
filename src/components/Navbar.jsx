@@ -3,7 +3,7 @@ import { HeartHandshake, MapPin, Menu, X } from 'lucide-react';
 
 const navItems = [
   { id: 'home', label: 'Home' },
-  { id: 'detect', label: 'Review a photo' },
+  { id: 'detect', label: 'AI Disease Scan' },
   { id: 'help', label: 'Find local care' },
   { id: 'awareness', label: 'Care guide' },
 ];
