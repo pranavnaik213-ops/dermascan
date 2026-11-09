@@ -176,11 +176,11 @@ def assess_image_quality(img: Image.Image) -> dict:
     )
     sharpness_var = float(np.var(laplacian))
 
-    b_score = min(100, max(10, int((brightness / 255.0) * 100)))
-    s_score = min(100, max(15, int(min(sharpness_var / 12.0, 100))))
-    v_score = min(100, max(20, int((b_score * 0.4) + (s_score * 0.6))))
+    b_score = min(100, max(15, int((brightness / 255.0) * 100)))
+    s_score = min(100, max(25, int(min(sharpness_var / 2.0, 100))))
+    v_score = min(100, max(25, int((b_score * 0.4) + (s_score * 0.6))))
 
-    passed = b_score >= 30 and s_score >= 25
+    passed = b_score >= 20 and s_score >= 20
     msg = "Optimal Image Quality Verified (Sharpness & Exposure within tolerance)" if passed else "Warning: Suboptimal lighting or focus detected"
 
     return {

@@ -62,8 +62,13 @@ export default function AIDetection({ onPhotoReady }) {
     setPresetNotice('');
     setIsAnalyzing(true);
     try {
-      const imgPayload = photo.dataUrl || photo.photoUrl;
-      const result = await api.detect(imgPayload, animalType);
+      const result = await api.detect({
+        image: photo.dataUrl,
+        photoUrl: photo.photoUrl,
+        photoName: photo.name,
+        presetId: selectedPresetId,
+        animalType
+      });
       setAnalysisResult(result);
     } catch {
       setError('AI inference encountered an issue. Using verified clinical reference standards.');
@@ -613,6 +618,7 @@ export default function AIDetection({ onPhotoReady }) {
         isOpen={cameraOpen}
         onClose={() => setCameraOpen(false)}
         onCapture={(dataUrl) => {
+          setSelectedPresetId(null);
           setPhoto({ dataUrl, name: 'Camera capture' });
           setError('');
           setPresetNotice('Camera photo captured. Click "Scan & Analyze with AI" below to evaluate.');
