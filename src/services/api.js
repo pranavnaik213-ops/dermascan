@@ -4,7 +4,7 @@
  * Includes graceful offline fallback to initial mock data.
  */
 
-import { INITIAL_CASES, MOCK_NGOS, VERIFIED_PET_HOSPITALS } from '../data/mockData';
+import { MOCK_NGOS, VERIFIED_PET_HOSPITALS } from '../data/mockData';
 
 const API_BASE = '/api';
 
@@ -66,8 +66,10 @@ export const api = {
       const query = params.toString() ? `?${params.toString()}` : '';
       return await request(`/cases${query}`);
     } catch {
-      const saved = localStorage.getItem('dermascan_clinical_cases_v3');
-      return saved ? JSON.parse(saved) : INITIAL_CASES;
+      try {
+        const saved = JSON.parse(localStorage.getItem('dermascan_clinical_cases_v3') || '[]');
+        return Array.isArray(saved) ? saved : [];
+      } catch { return []; }
     }
   },
 
@@ -82,27 +84,27 @@ export const api = {
 
   async createCase(caseData) {
     try {
-      return await request('/cases', {
+      const saved = await request('/cases', {
         method: 'POST',
         body: JSON.stringify(caseData)
       });
+      return { ...saved, storageMode: 'server' };
     } catch {
       // Offline fallback: save to localStorage
-      const id = caseData.id || `DS-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+      const id = caseData.id || `DS-${Date.now()}`;
       const newCase = {
         ...caseData,
         id,
-        status: caseData.status || 'ngo_pending',
-        reportedAt: caseData.reportedAt || new Date().toISOString().slice(0, 16).replace('T', ' '),
-        timeline: caseData.timeline || [
-          { step: "Citizen Report Filed via DermaScan", date: "Just now", done: true },
-          { step: "Automated AI Triage Assessment", date: "Just now", done: true },
-          { step: "Broadcasting Alert to Nearby Rescue NGOs", date: "In Progress", done: false }
-        ]
+        status: caseData.status || 'received',
+        reportedAt: caseData.reportedAt || new Date().toISOString()
       };
       const existing = await this.getCases();
-      localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify([newCase, ...existing]));
-      return newCase;
+      let storageMode = 'session';
+      try {
+        localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify([newCase, ...existing]));
+        storageMode = 'browser';
+      } catch { /* Caller still receives the report for this page session. */ }
+      return { ...newCase, storageMode };
     }
   },
 

@@ -557,35 +557,27 @@ class DatabaseManager {
   }
 
   createCase(casePayload) {
-    const id = casePayload.id || `DS-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const id = casePayload.id || `DS-${Date.now()}`;
     const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
     
     const newCase = {
       id,
-      animalType: casePayload.animalType || 'Dog',
-      reporterName: casePayload.reporterName || 'Citizen Reporter',
-      locationName: casePayload.locationName || 'Bengaluru Urban',
-      coordinates: casePayload.coordinates || { lat: 12.9716, lng: 77.5946 },
+      animalType: casePayload.animalType || 'Other or not sure',
+      reporterName: casePayload.reporterName || '',
+      reporterPhone: casePayload.reporterPhone || '',
+      locationName: casePayload.locationName || '',
+      landmark: casePayload.landmark || '',
+      coordinates: casePayload.coordinates || null,
       reportedAt: casePayload.reportedAt || nowStr,
-      symptoms: casePayload.symptoms || ["Skin Redness", "Alopecia"],
-      urgency: casePayload.urgency || "High",
-      priorityScore: casePayload.priorityScore || 75,
-      status: casePayload.status || "ngo_pending",
-      aiPrediction: casePayload.aiPrediction || "Suspected Canine Sarcoptic Mange",
-      aiConfidence: casePayload.aiConfidence || 88,
-      severity: casePayload.severity || "Preliminary",
+      observedAt: casePayload.observedAt || casePayload.reportedAt || nowStr,
+      observations: casePayload.observations || casePayload.notes || '',
+      photoName: casePayload.photoName || '',
+      status: casePayload.status || "received",
       assignedNGO: casePayload.assignedNGO || null,
       assignedVolunteer: casePayload.assignedVolunteer || null,
-      veterinaryNotes: casePayload.veterinaryNotes || "Pending initial clinical physical exam.",
+      veterinaryNotes: casePayload.veterinaryNotes || '',
       veterinarianConfirmed: casePayload.veterinarianConfirmed || false,
-      photoUrl: casePayload.photoUrl || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80",
-      gradCamUrl: casePayload.gradCamUrl || casePayload.photoUrl,
-      timeline: casePayload.timeline || [
-        { step: "Citizen Report Filed via DermaScan", date: "Just now", done: true },
-        { step: "Automated AI Triage Assessment", date: "Just now", done: true },
-        { step: "Broadcasting Alert to Nearby Rescue NGOs", date: "In Progress", done: false },
-        { step: "Field Volunteer Ambulance Dispatch", date: "Pending", done: false }
-      ]
+      photoUrl: casePayload.photoUrl || null
     };
 
     this.data.cases.unshift(newCase);
@@ -594,7 +586,7 @@ class DatabaseManager {
       actor: newCase.reporterName,
       type: "Case Created",
       details: `New report ${newCase.id} created for ${newCase.animalType} in ${newCase.locationName}`,
-      severity: newCase.urgency === 'Emergency' ? 'high' : 'low'
+      severity: 'low'
     });
 
     this.save();
