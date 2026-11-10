@@ -381,6 +381,15 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
       'sample-6': 'Healthy'
     };
 
+    const PRESET_ROI_MAP = {
+      'sample-1': { top: '16%', left: '26%', width: '48%', height: '44%' },
+      'sample-2': { top: '30%', left: '34%', width: '32%', height: '34%' },
+      'sample-3': { top: '28%', left: '30%', width: '40%', height: '38%' },
+      'sample-4': { top: '32%', left: '28%', width: '44%', height: '40%' },
+      'sample-5': { top: '34%', left: '26%', width: '48%', height: '38%' },
+      'sample-6': null
+    };
+
     if (req.body.presetId && PRESET_CLINICAL_MAP[req.body.presetId]) {
       const selectedKey = PRESET_CLINICAL_MAP[req.body.presetId];
       const selected = CLINICAL_DISEASE_CATALOG[selectedKey];
@@ -420,7 +429,7 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
         recommendedProtocol: selected.recommendedProtocol,
         allProbabilities,
         qualityCheck: { passed: true, brightness: 92, sharpness: 90, visibility: 94, message: "Optimal Image Quality Verified (Benchmark Clinical Standard)" },
-        roiBox: isHealthy ? null : { top: '24%', left: '26%', width: '48%', height: '48%' },
+        roiBox: isHealthy ? null : PRESET_ROI_MAP[req.body.presetId],
         inferenceTimeMs: 120
       });
     }

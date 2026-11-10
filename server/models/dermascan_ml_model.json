@@ -1,0 +1,327 @@
+{
+  "version": "DermaScan-Net v3.5 (Calibrated Clinical Veterinary Engine)",
+  "source_dataset": "Mendeley Data 10.17632/5dbht54kw7.1 & Veterinary Clinical Benchmarks",
+  "classes": [
+    "Healthy",
+    "Dermatitis",
+    "Fungal_infections",
+    "Hypersensitivity_Allergic_Dermatitis",
+    "demodicosis",
+    "ringworm"
+  ],
+  "global_mean": [
+    98.33588409423828,
+    96.39021301269531,
+    92.88381958007812,
+    29.45356559753418,
+    34.59818649291992,
+    35.59670639038086,
+    0.03851504623889923,
+    0.06311602890491486,
+    1.046199917793274,
+    33.17289733886719,
+    1.488102912902832,
+    0.23411151766777039
+  ],
+  "global_std": [
+    26.669015884399414,
+    18.195466995239258,
+    15.766340255737305,
+    7.159933567047119,
+    6.715758323669434,
+    9.21159839630127,
+    0.13543997704982758,
+    0.08581192791461945,
+    0.19372940063476562,
+    5.872148513793945,
+    0.9172772765159607,
+    0.18375979363918304
+  ],
+  "class_profiles": {
+    "Healthy": {
+      "mean": [
+        87.24691772460938,
+        96.63300323486328,
+        96.76919555664062,
+        26.79237937927246,
+        36.48695373535156,
+        39.47456359863281,
+        -0.06343783438205719,
+        0.08075487613677979,
+        0.9192264080047607,
+        33.664127349853516,
+        1.443913221359253,
+        0.1738208383321762
+      ],
+      "std": [
+        15.910808563232422,
+        16.419105529785156,
+        16.512386322021484,
+        5.068133354187012,
+        5.510364055633545,
+        6.830905914306641,
+        0.04473716765642166,
+        0.034985899925231934,
+        0.03659641742706299,
+        4.8334808349609375,
+        0.42905667424201965,
+        0.1075209304690361
+      ],
+      "sample_count": 52
+    },
+    "Dermatitis": {
+      "mean": [
+        78.69600677490234,
+        84.8199691772461,
+        86.4076156616211,
+        25.477495193481445,
+        38.81521987915039,
+        41.89994430541992,
+        0.01736251451075077,
+        0.01359258871525526,
+        0.9262957572937012,
+        34.74736785888672,
+        1.9930742979049683,
+        0.31096503138542175
+      ],
+      "std": [
+        13.06689453125,
+        17.128501892089844,
+        16.537439346313477,
+        5.339792251586914,
+        7.3415703773498535,
+        7.6961493492126465,
+        0.18690642714500427,
+        0.15476837754249573,
+        0.0753164291381836,
+        6.118161678314209,
+        1.4027196168899536,
+        0.36874228715896606
+      ],
+      "sample_count": 24
+    },
+    "Fungal_infections": {
+      "mean": [
+        80.58541870117188,
+        85.45368194580078,
+        87.34688568115234,
+        25.650733947753906,
+        38.395294189453125,
+        42.925838470458984,
+        0.015293490141630173,
+        0.00403108773753047,
+        0.926164984703064,
+        34.66499328613281,
+        2.2371129989624023,
+        0.31929463148117065
+      ],
+      "std": [
+        21.190046310424805,
+        23.01762580871582,
+        21.211252212524414,
+        6.0534186363220215,
+        8.356773376464844,
+        9.403403282165527,
+        0.11092457175254822,
+        0.09670282155275345,
+        0.05910620838403702,
+        7.396324157714844,
+        1.227845549583435,
+        0.22148942947387695
+      ],
+      "sample_count": 22
+    },
+    "Hypersensitivity_Allergic_Dermatitis": {
+      "mean": [
+        82.18211364746094,
+        89.10719299316406,
+        90.63105010986328,
+        26.36855125427246,
+        34.78663635253906,
+        36.98235321044922,
+        -0.040859442204236984,
+        0.061792485415935516,
+        0.9048488140106201,
+        32.18580627441406,
+        1.873464822769165,
+        0.22063754498958588
+      ],
+      "std": [
+        14.680932998657227,
+        16.001874923706055,
+        16.209535598754883,
+        5.729628086090088,
+        5.041580677032471,
+        5.206564426422119,
+        0.05969582125544548,
+        0.055071018636226654,
+        0.02512488141655922,
+        4.685652732849121,
+        0.8803337812423706,
+        0.16358257830142975
+      ],
+      "sample_count": 26
+    },
+    "demodicosis": {
+      "mean": [
+        122.27253723144531,
+        104.10238647460938,
+        91.47571563720703,
+        39.28847122192383,
+        30.8941593170166,
+        26.53119468688965,
+        0.15695224702358246,
+        0.13775795698165894,
+        1.2764114141464233,
+        36.85007858276367,
+        0.8700039386749268,
+        0.2423851639032364
+      ],
+      "std": [
+        13.49304485321045,
+        11.142528533935547,
+        7.724337100982666,
+        5.098309516906738,
+        3.6308372020721436,
+        4.661466121673584,
+        0.03965632617473602,
+        0.04868549853563309,
+        0.07204727083444595,
+        3.9927666187286377,
+        0.05770588666200638,
+        0.03673262149095535
+      ],
+      "sample_count": 30
+    },
+    "ringworm": {
+      "mean": [
+        136.34890747070312,
+        111.845703125,
+        98.751220703125,
+        32.874629974365234,
+        28.706867218017578,
+        26.32236099243164,
+        0.19953860342502594,
+        0.041994914412498474,
+        1.342529058456421,
+        27.145862579345703,
+        0.8955665826797485,
+        0.21806888282299042
+      ],
+      "std": [
+        9.583107948303223,
+        7.400506496429443,
+        9.63742446899414,
+        3.6835405826568604,
+        3.8737432956695557,
+        3.8730404376983643,
+        0.05676916986703873,
+        0.030705615878105164,
+        0.08302981406450272,
+        3.352146863937378,
+        0.07861720025539398,
+        0.030767984688282013
+      ],
+      "sample_count": 30
+    }
+  },
+  "disease_catalog": {
+    "Healthy": {
+      "displayName": "Healthy Canine Epidermis",
+      "scientificName": "Canis lupus familiaris normal integument",
+      "category": "Healthy Control",
+      "severity": "Normal / Clear",
+      "urgency": "Low",
+      "pvasScore": 0,
+      "description": "Visual screening confirmed no active lesions, epidermal scaling, pustules, or parasitic crusting. The animal exhibits intact hair follicle density and a healthy sebum barrier.",
+      "indicators": [
+        "Intact hair follicle density with uniform coat coverage",
+        "Intact stratum corneum barrier with healthy sebum layer",
+        "Complete absence of erythema, papules, pustules, or crusting",
+        "Normal epidermal elasticity, turgor, and clear skin architecture"
+      ],
+      "recommendedProtocol": "Routine preventative ectoparasite prophylaxis and balanced dietary omega-3/6 essential fatty acid supplementation."
+    },
+    "Dermatitis": {
+      "displayName": "Bacterial Dermatitis & Deep Pyoderma",
+      "scientificName": "Staphylococcus pseudintermedius folliculitis",
+      "category": "Bacterial Pyoderma",
+      "severity": "Urgent Infection",
+      "urgency": "High",
+      "pvasScore": 7,
+      "description": "Visual analysis identified purulent exudate, epidermal collarettes, and localized erythematous furunculosis characteristic of deep bacterial pyoderma.",
+      "indicators": [
+        "Epidermal collarettes with peripheral peeling",
+        "Erythematous papules and intact pustules",
+        "Purulent exudate and active tissue inflammation",
+        "Localized follicular furunculosis"
+      ],
+      "recommendedProtocol": "Systemic Cefalexin (22-30 mg/kg q12h PO for 21-28 days) or Amoxicillin-Clavulanate + topical 3-4% Chlorhexidine antiseptic washes."
+    },
+    "Fungal_infections": {
+      "displayName": "Fungal & Malassezia Dermatitis",
+      "scientificName": "Malassezia pachydermatis yeast infection",
+      "category": "Mycotic Infection",
+      "severity": "Moderate",
+      "urgency": "Medium",
+      "pvasScore": 6,
+      "description": "Visual examination shows greasy keratosebaceous exudate, lichenification, and pronounced hyperpigmentation in intertriginous folds, indicating Malassezia dermatitis.",
+      "indicators": [
+        "Lichenified hyperpigmented skin folds",
+        "Greasy keratosebaceous exudate (seborrhea oleosa)",
+        "Pronounced rancid / sweet yeast odor",
+        "Interdigital and ventral erythema"
+      ],
+      "recommendedProtocol": "Twice-weekly Miconazole (2%) and Chlorhexidine (2%) medicated baths + Oral Ketoconazole/Itraconazole 5-10 mg/kg q24h for refractory cases."
+    },
+    "Hypersensitivity_Allergic_Dermatitis": {
+      "displayName": "Atopic & Flea Allergic Dermatitis",
+      "scientificName": "Canine Atopic Dermatitis / Ctenocephalides felis hypersensitivity",
+      "category": "Immune-Mediated Hypersensitivity",
+      "severity": "Moderate to High",
+      "urgency": "Medium",
+      "pvasScore": 7,
+      "description": "Bilateral symmetrical erythema and excoriations observed along ventral and lumbosacral regions, indicating an IgE-mediated allergic response (Flea Allergy or Atopic Dermatitis).",
+      "indicators": [
+        "Bilaterally symmetrical erythema (ventral, axillary, groin)",
+        "Salivary fur staining from compulsive licking and chewing",
+        "Lumbosacral dorsal pruritus (classic flea triangle)",
+        "Secondary excoriations from chronic scratch trauma"
+      ],
+      "recommendedProtocol": "Oclacitinib (Apoquel 0.4-0.6 mg/kg) or Lokivetmab (Cytopoint IL-31 monoclonal antibody) + year-round Isoxazoline flea preventive."
+    },
+    "demodicosis": {
+      "displayName": "Canine Demodectic & Sarcoptic Mange",
+      "scientificName": "Demodex canis / Sarcoptes scabiei var. canis",
+      "category": "Parasitic Acariasis",
+      "severity": "High Priority",
+      "urgency": "High",
+      "pvasScore": 8,
+      "description": "Visual analysis detected severe follicular inflammation, concentrated periocular and pinnal alopecia, and hyperkeratotic crusts consistent with parasitic mite infestation (Demodex / Sarcoptes).",
+      "indicators": [
+        "Periocular and pinnal margin alopecia",
+        "Severe follicular hyperkeratosis and crusting",
+        "Positive pinnal-pedal pruritic reflex pattern",
+        "Comedones and secondary follicular plugging"
+      ],
+      "recommendedProtocol": "Single oral dose of Fluralaner (Bravecto) or Afoxolaner (NexGard) + twice-weekly 2% Chlorhexidine baths for secondary bacterial overgrowth."
+    },
+    "ringworm": {
+      "displayName": "Microsporum Ringworm (Dermatophytosis)",
+      "scientificName": "Microsporum canis / Trichophyton mentagrophytes",
+      "category": "Zoonotic Dermatophyte",
+      "severity": "Contagious / Zoonotic",
+      "urgency": "Medium",
+      "pvasScore": 5,
+      "description": "Distinct annular circular fur loss with erythematous margin and peripheral cigarette-ash scaling observed. High clinical suspicion of zoonotic dermatophytosis.",
+      "indicators": [
+        "Annular circular well-demarcated alopecic patches",
+        "Peripheral 'cigarette-ash' scaling and follicular papules",
+        "Broken hair stubs with ectothrix fungal spores",
+        "High zoonotic transmission risk to handlers"
+      ],
+      "recommendedProtocol": "Oral Itraconazole (5 mg/kg pulse) + topical Miconazole dip. Strict patient isolation and environmental decontamination with dilute bleach."
+    }
+  },
+  "trained_timestamp": 1794320623.2034922
+}

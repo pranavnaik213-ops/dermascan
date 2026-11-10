@@ -137,86 +137,107 @@ export default function AIDetection({ onPhotoReady }) {
         <div className="panel photo-review-panel" style={{ display: 'flex', flexDirection: 'column' }}>
           {photo ? (
             <>
-              <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', textAlign: 'center' }}>
-                <img
-                  src={photo.dataUrl || photo.photoUrl}
-                  alt="Animal skin subject"
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    maxHeight: '440px',
-                    objectFit: 'contain',
-                    margin: '0 auto'
-                  }}
-                />
-
-                {/* Status Overlay: ONLY draw red lesion box if a real lesion was detected (NEVER on healthy skin!) */}
-                {analysisResult?.roiBox && !isHealthyResult && (
-                  <div
+              <div style={{
+                position: 'relative',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: '#090d16',
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '280px',
+                padding: '12px',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
+              }}>
+                <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0, maxWidth: '100%' }}>
+                  <img
+                    src={photo.dataUrl || photo.photoUrl}
+                    alt="Animal skin subject"
                     style={{
-                      position: 'absolute',
-                      top: analysisResult.roiBox.top,
-                      left: analysisResult.roiBox.left,
-                      width: analysisResult.roiBox.width,
-                      height: analysisResult.roiBox.height,
-                      border: '2px solid #ef4444',
-                      background: 'rgba(239, 68, 68, 0.18)',
-                      boxShadow: '0 0 12px rgba(239, 68, 68, 0.6), inset 0 0 8px rgba(239, 68, 68, 0.3)',
-                      borderRadius: '4px',
-                      pointerEvents: 'none',
-                      transition: 'all 0.3s ease'
+                      display: 'block',
+                      maxWidth: '100%',
+                      maxHeight: '450px',
+                      width: 'auto',
+                      height: 'auto',
+                      margin: '0 auto',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
                     }}
-                  >
-                    <span style={{
-                      position: 'absolute',
-                      top: '-20px',
-                      left: '0',
-                      background: '#ef4444',
-                      color: '#fff',
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      padding: '1px 6px',
-                      borderRadius: '3px',
-                      letterSpacing: '0.04em'
-                    }}>
-                      DETECTED LESION REGION
-                    </span>
-                  </div>
-                )}
+                  />
 
-                {/* Scanning status banner */}
-                {isAnalyzing && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(15, 23, 42, 0.82)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    color: '#fff',
-                    backdropFilter: 'blur(3px)',
-                    overflow: 'hidden'
-                  }}>
-                    <div className="scanner-laser-line" />
+                  {/* Status Overlay: ONLY draw red lesion box if a real lesion was detected (NEVER on healthy skin!) */}
+                  {analysisResult?.roiBox && !isHealthyResult && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: analysisResult.roiBox.top,
+                        left: analysisResult.roiBox.left,
+                        width: analysisResult.roiBox.width,
+                        height: analysisResult.roiBox.height,
+                        border: '2px solid #ef4444',
+                        background: 'rgba(239, 68, 68, 0.18)',
+                        boxShadow: '0 0 16px rgba(239, 68, 68, 0.65), inset 0 0 10px rgba(239, 68, 68, 0.35)',
+                        borderRadius: '6px',
+                        pointerEvents: 'none',
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        zIndex: 10
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute',
+                        top: '-22px',
+                        left: '0',
+                        background: '#ef4444',
+                        color: '#fff',
+                        fontSize: '9.5px',
+                        fontWeight: 800,
+                        padding: '2px 7px',
+                        borderRadius: '3px',
+                        letterSpacing: '0.04em',
+                        whiteSpace: 'nowrap',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                      }}>
+                        FOCAL LESION ({analysisResult.conditionKey})
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Scanning status banner */}
+                  {isAnalyzing && (
                     <div style={{
-                      width: '46px',
-                      height: '46px',
-                      border: '3px solid #14b8a6',
-                      borderTopColor: 'transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 0.75s linear infinite',
-                      boxShadow: '0 0 15px rgba(20, 184, 166, 0.5)'
-                    }} />
-                    <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.02em', color: '#f0fdfa' }}>
-                      Screening image with AI...
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      color: '#fff',
+                      backdropFilter: 'blur(3px)',
+                      overflow: 'hidden',
+                      zIndex: 20
+                    }}>
+                      <div className="scanner-laser-line" />
+                      <div style={{
+                        width: '46px',
+                        height: '46px',
+                        border: '3px solid #14b8a6',
+                        borderTopColor: 'transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 0.75s linear infinite',
+                        boxShadow: '0 0 15px rgba(20, 184, 166, 0.5)'
+                      }} />
+                      <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.02em', color: '#f0fdfa' }}>
+                        Screening image with AI...
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#99f6e4' }}>
+                        Scanning neural feature maps for active lesions & dermatological patterns
+                      </div>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#99f6e4' }}>
-                      Scanning neural feature maps for active lesions & dermatological patterns
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Photo metadata strip under the image */}

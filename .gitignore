@@ -23,6 +23,7 @@ server/uploads/*
 !server/uploads/.gitkeep
 server/models/*
 !server/models/.gitkeep
+!server/models/*.json
 *.pt
 *.tmp
 
