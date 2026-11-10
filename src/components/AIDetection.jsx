@@ -2,16 +2,22 @@ import React, { useRef, useState } from 'react';
 import {
   ArrowRight,
   Camera,
+  CheckCircle2,
+  Cpu,
+  ExternalLink,
   ImagePlus,
   Info,
+  Key,
   ShieldCheck,
   Sparkles,
   Trash2,
-  Upload
+  Upload,
+  X
 } from 'lucide-react';
 import CameraModal from './CameraModal';
 import Interactive3DCard from './Interactive3DCard';
 import { api } from '../services/api';
+import { geminiVisionService } from '../services/geminiVisionService';
 import { PRESET_DETECTION_SAMPLES } from '../data/mockData';
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -26,6 +32,48 @@ export default function AIDetection({ onPhotoReady }) {
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [animalType, setAnimalType] = useState('Dog');
   const [presetNotice, setPresetNotice] = useState('');
+
+  // Google Gemini AI Model Integration State
+  const [geminiModalOpen, setGeminiModalOpen] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => geminiVisionService.getKey());
+  const [hasGeminiKey, setHasGeminiKey] = useState(() => geminiVisionService.hasKey());
+  const [geminiTesting, setGeminiTesting] = useState(false);
+  const [geminiSuccess, setGeminiSuccess] = useState('');
+  const [geminiError, setGeminiError] = useState('');
+
+  const handleSaveGeminiKey = async (e) => {
+    e.preventDefault();
+    setGeminiError('');
+    setGeminiSuccess('');
+    const key = geminiKeyInput.trim();
+
+    if (!key) {
+      geminiVisionService.clearKey();
+      setHasGeminiKey(false);
+      setGeminiSuccess('Key removed. Active model switched to on-device clinical engine.');
+      return;
+    }
+
+    setGeminiTesting(true);
+    try {
+      await geminiVisionService.testKey(key);
+      geminiVisionService.setKey(key);
+      setHasGeminiKey(true);
+      setGeminiSuccess('Google Gemini API Key verified & activated! Multimodal Vision is active.');
+    } catch (err) {
+      setGeminiError(err.message || 'Could not verify API key. Please check the key.');
+    } finally {
+      setGeminiTesting(false);
+    }
+  };
+
+  const handleRemoveGeminiKey = () => {
+    geminiVisionService.clearKey();
+    setGeminiKeyInput('');
+    setHasGeminiKey(false);
+    setGeminiSuccess('Google Gemini key removed. Active model switched to on-device clinical engine.');
+    setGeminiError('');
+  };
 
   // Read file from user device
   const readPhoto = (file) => {
@@ -130,6 +178,55 @@ export default function AIDetection({ onPhotoReady }) {
           Upload an animal photo to screen for dermatological lesions. The screening system evaluates the image for active inflammation, alopecia, and skin conditions.
         </p>
       </header>
+
+      {/* AI Model Engine Status Banner */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        padding: '12px 16px',
+        marginBottom: '20px',
+        borderRadius: '10px',
+        background: hasGeminiKey ? '#f0fdf4' : '#f8fafc',
+        border: `1px solid ${hasGeminiKey ? '#bbf7d0' : '#e2e8f0'}`
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            display: 'inline-grid',
+            placeItems: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            background: hasGeminiKey ? '#10b981' : '#64748b',
+            color: '#fff',
+            flexShrink: 0
+          }}>
+            <Cpu size={15} />
+          </span>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: hasGeminiKey ? '#065f46' : '#1e293b' }}>
+              {hasGeminiKey ? 'Google Gemini Multimodal Vision AI Active' : 'DermaScan Clinical Vision Engine Active'}
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+              {hasGeminiKey
+                ? 'Clinical classification powered directly by Google Gemini 1.5 Flash Vision'
+                : 'Connect your free Google Gemini API Key for deep multimodal disease recognition (1,500 free daily scans)'}
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => { setGeminiModalOpen(true); setGeminiError(''); setGeminiSuccess(''); }}
+          style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Key size={13} />
+          {hasGeminiKey ? 'AI Model Settings' : 'Connect Free Google Gemini AI'}
+        </button>
+      </div>
 
       {/* Main Scanner Workspace */}
       <div className="photo-review-layout" style={{ gridTemplateColumns: analysisResult ? 'minmax(0, 1.1fr) minmax(320px, 1.2fr)' : undefined }}>
@@ -590,6 +687,126 @@ export default function AIDetection({ onPhotoReady }) {
           setAnalysisResult(null);
         }}
       />
+
+      {/* Google Gemini Multimodal Vision AI Model Modal */}
+      {geminiModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '20px',
+          zIndex: 1000
+        }}>
+          <div className="panel" style={{
+            maxWidth: '520px',
+            width: '100%',
+            padding: '24px',
+            borderRadius: '14px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+            background: '#fff'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#ecfdf5', color: '#059669', display: 'grid', placeItems: 'center' }}>
+                  <Sparkles size={18} />
+                </span>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 750, color: '#0f172a' }}>
+                  Google Gemini Multimodal Vision AI
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGeminiModalOpen(false)}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5, margin: '0 0 16px' }}>
+              Connect Google Gemini 1.5 Flash Vision to screen animal dermatological photos with deep multimodal accuracy. 
+              Google provides <strong>1,500 free daily scans</strong> with no credit card required.
+            </p>
+
+            <form onSubmit={handleSaveGeminiKey} style={{ display: 'grid', gap: '14px' }}>
+              <div>
+                <label htmlFor="gemini-key-input" style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
+                  Google Gemini API Key
+                </label>
+                <input
+                  id="gemini-key-input"
+                  type="password"
+                  value={geminiKeyInput}
+                  onChange={(e) => setGeminiKeyInput(e.target.value)}
+                  placeholder="AIzaSy..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    fontSize: '13.5px',
+                    fontFamily: 'monospace'
+                  }}
+                />
+              </div>
+
+              {geminiError && (
+                <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12.5px' }}>
+                  {geminiError}
+                </div>
+              )}
+
+              {geminiSuccess && (
+                <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={16} /> {geminiSuccess}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <button
+                  type="submit"
+                  disabled={geminiTesting}
+                  className="button button-primary"
+                  style={{ flex: 1, minHeight: '42px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px' }}
+                >
+                  <Key size={14} />
+                  {geminiTesting ? 'Verifying with Google…' : 'Save & Activate Key'}
+                </button>
+
+                {hasGeminiKey && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveGeminiKey}
+                    className="button button-secondary"
+                    style={{ minHeight: '42px', color: '#dc2626', fontSize: '13px' }}
+                  >
+                    Disconnect
+                  </button>
+                )}
+              </div>
+            </form>
+
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b' }}>
+              <span>Need a free API key? </span>
+              <a
+                href="https://aistudio.google.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#0d9488', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+              >
+                Get your free key on Google AI Studio <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
