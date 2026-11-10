@@ -10,7 +10,11 @@ export default function Footer({ setActiveTab }) {
           <span>DermaScan</span>
         </div>
         <p><Stethoscope size={15} aria-hidden="true" /> Photo review is not a veterinary diagnosis. Contact a veterinarian if you are concerned about an animal’s health.</p>
-        <button type="button" onClick={() => setActiveTab('awareness')}>Read the care guide</button>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => setActiveTab('awareness')}>Read the care guide</button>
+          <span style={{ opacity: 0.4 }}>•</span>
+          <button type="button" onClick={() => setActiveTab('admin')}>Admin Portal</button>
+        </div>
       </div>
     </footer>
   );

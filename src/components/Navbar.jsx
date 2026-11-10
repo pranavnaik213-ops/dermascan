@@ -6,6 +6,7 @@ const navItems = [
   { id: 'detect', label: 'AI Disease Scan' },
   { id: 'help', label: 'Find local care' },
   { id: 'awareness', label: 'Care guide' },
+  { id: 'admin', label: 'Admin' },
 ];
 
 export default function Navbar({ activeTab, setActiveTab }) {

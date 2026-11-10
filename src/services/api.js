@@ -5,6 +5,7 @@
  */
 
 import { MOCK_NGOS, VERIFIED_PET_HOSPITALS } from '../data/mockData.js';
+import { caseStorage } from './caseStorage.js';
 
 const API_BASE = '/api';
 
@@ -56,70 +57,94 @@ export const api = {
     }
   },
 
-  // --- CASES CRUD ---
+  // --- CASES CRUD (Permanent IndexedDB + LocalStorage + Backend Sync) ---
   async getCases(filters = {}) {
     try {
       const params = new URLSearchParams();
-      if (filters.urgency) params.set('urgency', filters.urgency);
-      if (filters.status) params.set('status', filters.status);
+      if (filters.urgency && filters.urgency !== 'all') params.set('urgency', filters.urgency);
+      if (filters.status && filters.status !== 'all') params.set('status', filters.status);
       if (filters.search) params.set('search', filters.search);
       const query = params.toString() ? `?${params.toString()}` : '';
-      return await request(`/cases${query}`);
+      const serverCases = await request(`/cases${query}`);
+      if (Array.isArray(serverCases) && serverCases.length > 0) {
+        for (const sc of serverCases) {
+          caseStorage.saveReport(sc).catch(() => {});
+        }
+        return serverCases;
+      }
     } catch {
-      try {
-        const saved = JSON.parse(localStorage.getItem('dermascan_clinical_cases_v3') || '[]');
-        return Array.isArray(saved) ? saved : [];
-      } catch { return []; }
+      // Fall through to permanent local storage
     }
+
+    const localCases = await caseStorage.getAllReports();
+    let result = [...localCases];
+
+    if (filters.status && filters.status !== 'all') {
+      result = result.filter(c => c.status === filters.status);
+    }
+    if (filters.animal && filters.animal !== 'all') {
+      result = result.filter(c => (c.animal || c.animalType || '').toLowerCase() === filters.animal.toLowerCase());
+    }
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter(c =>
+        (c.id && c.id.toLowerCase().includes(q)) ||
+        (c.location && c.location.toLowerCase().includes(q)) ||
+        (c.observations && c.observations.toLowerCase().includes(q)) ||
+        (c.animal && c.animal.toLowerCase().includes(q))
+      );
+    }
+    return result;
   },
 
   async getCaseById(id) {
     try {
       return await request(`/cases/${encodeURIComponent(id)}`);
     } catch {
-      const cases = await this.getCases();
+      const cases = await caseStorage.getAllReports();
       return cases.find(c => c.id === id) || null;
     }
   },
 
   async createCase(caseData) {
+    // 1. Save to permanent IndexedDB + localStorage first
+    const saved = await caseStorage.saveReport(caseData);
+
+    // 2. Sync to server if online
     try {
-      const saved = await request('/cases', {
+      const serverRes = await request('/cases', {
         method: 'POST',
         body: JSON.stringify(caseData)
       });
-      return { ...saved, storageMode: 'server' };
+      return { ...saved, ...serverRes, storageMode: 'server' };
     } catch {
-      // Offline fallback: save to localStorage
-      const id = caseData.id || `DS-${Date.now()}`;
-      const newCase = {
-        ...caseData,
-        id,
-        status: caseData.status || 'received',
-        reportedAt: caseData.reportedAt || new Date().toISOString()
-      };
-      const existing = await this.getCases();
-      let storageMode = 'session';
-      try {
-        localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify([newCase, ...existing]));
-        storageMode = 'browser';
-      } catch { /* Caller still receives the report for this page session. */ }
-      return { ...newCase, storageMode };
+      return { ...saved, storageMode: 'indexeddb_permanent' };
     }
   },
 
-  async updateCaseStatus(id, status, actor = 'Staff') {
+  async updateCaseStatus(id, status, actor = 'Administrator') {
+    const updated = await caseStorage.updateReport(id, { status, actor });
     try {
-      return await request(`/cases/${encodeURIComponent(id)}/status`, {
+      const serverRes = await request(`/cases/${encodeURIComponent(id)}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status, actor })
       });
+      return { ...updated, ...serverRes };
     } catch {
-      const existing = await this.getCases();
-      const updated = existing.map(c => c.id === id ? { ...c, status } : c);
-      localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify(updated));
-      return updated.find(c => c.id === id);
+      return updated;
     }
+  },
+
+  async deleteCase(id) {
+    await caseStorage.deleteReport(id);
+    try {
+      await request(`/cases/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      // Offline fallback handled by caseStorage
+    }
+    return { success: true };
   },
 
   async assignCase(id, ngoName, volunteerName = 'Field Rescue Van') {
@@ -166,19 +191,6 @@ export const api = {
       });
       localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify(updated));
       return updated.find(c => c.id === id);
-    }
-  },
-
-  async deleteCase(id) {
-    try {
-      return await request(`/cases/${encodeURIComponent(id)}`, {
-        method: 'DELETE'
-      });
-    } catch {
-      const existing = await this.getCases();
-      const filtered = existing.filter(c => c.id !== id);
-      localStorage.setItem('dermascan_clinical_cases_v3', JSON.stringify(filtered));
-      return { success: true };
     }
   },
 

@@ -5,12 +5,13 @@ import AIDetection from './components/AIDetection';
 import ReportAnimal from './components/ReportAnimal';
 import NearbyCare from './components/NearbyCare';
 import Awareness from './components/Awareness';
+import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import Interactive3DScene from './components/Interactive3DScene';
 import { api } from './services/api';
 import './App.css';
 
-const VALID_TABS = ['home', 'detect', 'report', 'help', 'awareness'];
+const VALID_TABS = ['home', 'detect', 'report', 'help', 'awareness', 'admin'];
 
 function getInitialTab() {
   if (typeof window === 'undefined') return 'home';
@@ -122,6 +123,7 @@ export default function App() {
         )}
         {activeTab === 'help' && <NearbyCare report={latestReport} />}
         {activeTab === 'awareness' && <Awareness setActiveTab={navigateToTab} />}
+        {activeTab === 'admin' && <AdminDashboard setActiveTab={navigateToTab} />}
       </main>
 
       <Footer setActiveTab={navigateToTab} />

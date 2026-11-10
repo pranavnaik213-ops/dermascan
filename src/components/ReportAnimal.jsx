@@ -27,6 +27,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
   const [observedAt, setObservedAt] = useState(draft.observedAt || localDateTime());
   const [observations, setObservations] = useState(draft.observations || initialPhoto?.observations || '');
   const [photo, setPhoto] = useState(initialPhoto || null);
+  const [aiDiagnosis, setAiDiagnosis] = useState(initialPhoto?.aiDiagnosis || null);
   const [coordinates, setCoordinates] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
@@ -50,6 +51,9 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
       }
       if (initialPhoto.observations) {
         setObservations(initialPhoto.observations);
+      }
+      if (initialPhoto.aiDiagnosis) {
+        setAiDiagnosis(initialPhoto.aiDiagnosis);
       }
     }
   }
@@ -119,6 +123,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
       notes: observations.trim(),
       photoUrl: photo?.photoUrl || '',
       photoName: photo?.photoName || '',
+      aiDiagnosis: aiDiagnosis || null,
       status: 'received',
     };
     try {
