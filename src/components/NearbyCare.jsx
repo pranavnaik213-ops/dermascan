@@ -1,166 +1,199 @@
 import React, { useEffect, useState } from 'react';
-import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import {
-  Building2,
+  Car,
   ExternalLink,
   HeartHandshake,
+  Home,
+  Layers,
   LocateFixed,
   Mail,
   MapPin,
+  Minus,
   Navigation,
-  Phone,
+  PhoneCall,
+  Plus,
+  RotateCcw,
   Search,
   ShieldCheck,
   Stethoscope
 } from 'lucide-react';
-import { MOCK_NGOS, VERIFIED_PET_HOSPITALS } from '../data/mockData';
 
-// Haversine formula to compute accurate distance in kilometers
-function distanceKm(from, to) {
-  if (!from || !to) return null;
-  const radians = (deg) => deg * (Math.PI / 180);
-  const dLat = radians(to.lat - from.lat);
-  const dLon = radians(to.lng - from.lng);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(from.lat)) * Math.cos(radians(to.lat)) * Math.sin(dLon / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Controller to smoothly pan map when user location or selected place changes
-function MapViewUpdater({ center, zoom }) {
-  const map = useMap();
-  useEffect(() => {
-    if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) {
-      map.setView([center.lat, center.lng], zoom || 13, { animate: true });
-    }
-  }, [center, zoom, map]);
-  return null;
-}
-
-// Custom Leaflet Icons
-const userLocationIcon = L.divIcon({
-  className: 'user-gps-marker',
-  html: `
-    <div style="position: relative; width: 28px; height: 28px;">
-      <div style="
-        position: absolute;
-        top: -8px;
-        left: -8px;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: rgba(37, 99, 235, 0.28);
-        animation: userGpsPulse 2s infinite ease-out;
-      "></div>
-      <div style="
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #2563eb;
-        border: 3.5px solid #ffffff;
-        box-shadow: 0 0 14px rgba(37, 99, 235, 0.8), 0 2px 6px rgba(0,0,0,0.35);
-      "></div>
-      <div style="
-        position: absolute;
-        top: 9px;
-        left: 9px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #ffffff;
-      "></div>
-    </div>
-  `,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -16]
-});
-
-const createFacilityIcon = (type, isEmergency) => {
-  let bg = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-  let emoji = '🏥';
-
-  if (isEmergency) {
-    bg = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
-    emoji = '🚨';
-  } else if (type === 'ngo' || type === 'shelter') {
-    bg = 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)';
-    emoji = '🐾';
-  } else if (type === 'care_center') {
-    bg = 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)';
-    emoji = '🩺';
+// Comprehensive Metropolitan City & Locality Directory
+const CITIES_AND_LOCALITIES = [
+  {
+    city: 'Bengaluru (Bangalore)',
+    id: 'bangalore',
+    defaultQuery: 'Bengaluru, Karnataka',
+    localities: [
+      { name: 'All Bengaluru (Entire City)', query: 'Bengaluru, Karnataka' },
+      { name: 'Koramangala & HSR Layout', query: 'Koramangala HSR Layout Bengaluru' },
+      { name: 'Indiranagar & Domlur', query: 'Indiranagar Domlur Bengaluru' },
+      { name: 'Whitefield & Marathahalli', query: 'Whitefield Marathahalli Bengaluru' },
+      { name: 'Jayanagar & JP Nagar', query: 'Jayanagar JP Nagar Bengaluru' },
+      { name: 'Hebbal & Yelahanka', query: 'Hebbal Yelahanka Bengaluru' },
+      { name: 'Malleshwaram & Rajajinagar', query: 'Malleshwaram Rajajinagar Bengaluru' },
+      { name: 'Electronic City & BTM', query: 'Electronic City BTM Layout Bengaluru' },
+      { name: 'Bellandur & Sarjapur Road', query: 'Bellandur Sarjapur Road Bengaluru' },
+      { name: 'Kengeri & Mysore Road', query: 'Kengeri Mysore Road Bengaluru' },
+    ]
+  },
+  {
+    city: 'Mumbai',
+    id: 'mumbai',
+    defaultQuery: 'Mumbai, Maharashtra',
+    localities: [
+      { name: 'All Mumbai (Entire City)', query: 'Mumbai, Maharashtra' },
+      { name: 'Bandra & Khar (West)', query: 'Bandra West Khar Mumbai' },
+      { name: 'Andheri & Juhu', query: 'Andheri West Juhu Mumbai' },
+      { name: 'South Mumbai (Colaba, Fort)', query: 'Colaba Fort South Mumbai' },
+      { name: 'Powai & Ghatkopar', query: 'Powai Ghatkopar Mumbai' },
+      { name: 'Thane & Mulund', query: 'Thane Mulund Mumbai' },
+      { name: 'Navi Mumbai (Vashi, Nerul)', query: 'Vashi Nerul Navi Mumbai' },
+      { name: 'Borivali & Kandivali', query: 'Borivali Kandivali Mumbai' },
+      { name: 'Dadar & Prabhadevi', query: 'Dadar Prabhadevi Mumbai' },
+    ]
+  },
+  {
+    city: 'Delhi NCR',
+    id: 'delhi',
+    defaultQuery: 'Delhi NCR',
+    localities: [
+      { name: 'All Delhi NCR (Entire Region)', query: 'Delhi NCR' },
+      { name: 'South Delhi (Hauz Khas, Saket)', query: 'Hauz Khas Saket South Delhi' },
+      { name: 'Gurgaon / Gurugram', query: 'Cyber City Sector 29 Gurgaon' },
+      { name: 'Noida & Greater Noida', query: 'Sector 18 Sector 62 Noida' },
+      { name: 'Central Delhi (Connaught Place)', query: 'Connaught Place New Delhi' },
+      { name: 'West Delhi (Rajouri Garden, Janakpuri)', query: 'Rajouri Garden Janakpuri West Delhi' },
+      { name: 'North Delhi (Civil Lines, Rohini)', query: 'Civil Lines Rohini North Delhi' },
+      { name: 'East Delhi & Ghaziabad', query: 'Mayur Vihar Ghaziabad Delhi' },
+    ]
+  },
+  {
+    city: 'Hyderabad',
+    id: 'hyderabad',
+    defaultQuery: 'Hyderabad, Telangana',
+    localities: [
+      { name: 'All Hyderabad (Entire City)', query: 'Hyderabad, Telangana' },
+      { name: 'Banjara Hills & Jubilee Hills', query: 'Banjara Hills Jubilee Hills Hyderabad' },
+      { name: 'Gachibowli & Hitec City', query: 'Gachibowli Hitec City Hyderabad' },
+      { name: 'Madhapur & Kondapur', query: 'Madhapur Kondapur Hyderabad' },
+      { name: 'Secunderabad', query: 'Secunderabad Telangana' },
+      { name: 'Kukatpally & Miyapur', query: 'Kukatpally Miyapur Hyderabad' },
+      { name: 'Begumpet & Somajiguda', query: 'Begumpet Somajiguda Hyderabad' },
+    ]
+  },
+  {
+    city: 'Pune',
+    id: 'pune',
+    defaultQuery: 'Pune, Maharashtra',
+    localities: [
+      { name: 'All Pune (Entire City)', query: 'Pune, Maharashtra' },
+      { name: 'Koregaon Park & Kalyani Nagar', query: 'Koregaon Park Kalyani Nagar Pune' },
+      { name: 'Kothrud & Baner', query: 'Kothrud Baner Pune' },
+      { name: 'Viman Nagar & Hadapsar', query: 'Viman Nagar Hadapsar Pune' },
+      { name: 'Wakad & Hinjewadi', query: 'Wakad Hinjewadi Pune' },
+      { name: 'Aundh & Pashan', query: 'Aundh Pashan Pune' },
+      { name: 'Camp & Swargate', query: 'Camp Swargate Pune' },
+    ]
+  },
+  {
+    city: 'Chennai',
+    id: 'chennai',
+    defaultQuery: 'Chennai, Tamil Nadu',
+    localities: [
+      { name: 'All Chennai (Entire City)', query: 'Chennai, Tamil Nadu' },
+      { name: 'Adyar & Besant Nagar', query: 'Adyar Besant Nagar Chennai' },
+      { name: 'Anna Nagar & Kilpauk', query: 'Anna Nagar Kilpauk Chennai' },
+      { name: 'T Nagar & Nungambakkam', query: 'T Nagar Nungambakkam Chennai' },
+      { name: 'Velachery & OMR IT Corridor', query: 'Velachery OMR Chennai' },
+      { name: 'Mylapore & Alwarpet', query: 'Mylapore Alwarpet Chennai' },
+      { name: 'Porur & Guindy', query: 'Porur Guindy Chennai' },
+    ]
+  },
+  {
+    city: 'Kolkata',
+    id: 'kolkata',
+    defaultQuery: 'Kolkata, West Bengal',
+    localities: [
+      { name: 'All Kolkata (Entire City)', query: 'Kolkata, West Bengal' },
+      { name: 'Salt Lake & New Town', query: 'Salt Lake New Town Kolkata' },
+      { name: 'South Kolkata (Ballygunge, Alipore)', query: 'Ballygunge Alipore South Kolkata' },
+      { name: 'Park Street & Central Kolkata', query: 'Park Street Kolkata' },
+      { name: 'North Kolkata (Shyambazar, Dum Dum)', query: 'Shyambazar Dum Dum Kolkata' },
+      { name: 'Behala & Jadavpur', query: 'Behala Jadavpur Kolkata' },
+    ]
   }
+];
 
-  return L.divIcon({
-    className: 'facility-leaflet-icon',
-    html: `
-      <div style="
-        background: ${bg};
-        width: 32px;
-        height: 32px;
-        border-radius: 10px;
-        border: 2.5px solid #ffffff;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-        color: #fff;
-        cursor: pointer;
-      ">
-        ${emoji}
-      </div>
-    `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -18]
-  });
-};
-
-// Combine all verified hospitals & NGOs into a unified directory
-const MASTER_CARE_DIRECTORY = [
-  ...VERIFIED_PET_HOSPITALS.map((h) => ({
-    id: h.id,
-    name: h.name,
-    category: h.operatingHours?.includes('24/7') ? 'emergency' : 'hospital',
-    typeLabel: h.operatingHours?.includes('24/7') ? '24/7 Emergency Pet Hospital' : 'Veterinary Hospital',
-    type: 'hospital',
-    isEmergency: h.operatingHours?.includes('24/7'),
-    address: h.address,
-    area: h.area,
-    phone: h.phone || h.helpline,
-    operatingHours: h.operatingHours,
-    doctorInCharge: h.doctorInCharge,
-    facilities: h.facilities || [],
-    coordinates: h.coordinates,
-    verified: true,
-  })),
-  ...MOCK_NGOS.map((n) => ({
-    id: n.id,
-    name: n.name,
-    category: 'ngo',
-    typeLabel: 'Animal Shelter & Rescue NGO',
-    type: 'ngo',
-    isEmergency: false,
-    address: n.address,
-    area: n.area,
-    phone: n.helpline || n.phone,
-    operatingHours: n.operatingHours,
-    doctorInCharge: n.headVolunteer,
-    facilities: n.specialties || [],
-    coordinates: n.coordinates,
-    verified: true,
-  }))
+// Care Categories strictly ordered as requested:
+// 1. Day Care Centers -> 2. Pet Hospitals -> 3. NGOs -> 4. Pet Shelters -> 5. 24/7 Emergency
+const CARE_CATEGORIES = [
+  {
+    id: 'daycare',
+    label: '🏡 Day Care Centers',
+    badge: 'DAY CARE & BOARDING',
+    icon: Home,
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    googleKeyword: 'pet day care boarding dog day care pet crèche',
+    headline: 'Nearby Pet Day Care & Boarding Centers',
+    desc: 'Day care facilities, dog boarding, puppy socialization, and daily pet supervision centers.'
+  },
+  {
+    id: 'hospital',
+    label: '🏥 Pet Hospitals',
+    badge: 'VETERINARY CLINICS & HOSPITALS',
+    icon: Stethoscope,
+    color: '#059669',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    googleKeyword: 'pet hospital veterinary clinic animal hospital',
+    headline: 'Nearby Pet Hospitals & Veterinary Care',
+    desc: 'General veterinary medicine, outpatient triage, skin scrapings, vaccines, and consultations.'
+  },
+  {
+    id: 'ngo',
+    label: '🤝 Animal Welfare NGOs',
+    badge: 'RESCUE NGOS & VOLUNTEERS',
+    icon: HeartHandshake,
+    color: '#ea580c',
+    bg: '#fff7ed',
+    border: '#fed7aa',
+    googleKeyword: 'animal rescue NGO stray dog welfare animal charity',
+    headline: 'Animal Welfare NGOs & Rescue Organizations',
+    desc: 'Registered stray rescue foundations, animal rights charities, and community ambulance teams.'
+  },
+  {
+    id: 'shelter',
+    label: '🐾 Pet Shelters',
+    badge: 'ANIMAL SHELTERS & SANCTUARIES',
+    icon: MapPin,
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    googleKeyword: 'pet shelter animal shelter stray sanctuary animal rescue home',
+    headline: 'Nearby Pet Shelters & Animal Sanctuaries',
+    desc: 'Adoption kennels, permanent sanctuaries for abandoned pets, and temporary foster centers.'
+  },
+  {
+    id: 'emergency',
+    label: '🚨 24/7 Emergency Care',
+    badge: 'CRITICAL TRAUMA & CASUALTY',
+    icon: PhoneCall,
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    googleKeyword: '24 hours emergency pet hospital veterinary casualty trauma ICU',
+    headline: '24/7 Emergency Veterinary Hospitals',
+    desc: 'Round-the-clock emergency casualty wards, trauma surgeries, snake bite care, and critical ICUs.'
+  }
 ];
 
 function createEmailDraft(report, recipient = '') {
   const subject = `Animal care report reference ${report.id || ''}`.trim();
   const body = [
-    'Hello Veterinary Team / Rescue Coordinator,',
+    'Hello Care Team,',
     '',
     'I would like to share an animal care observation for your review.',
     '',
@@ -178,21 +211,26 @@ function createEmailDraft(report, recipient = '') {
 }
 
 export default function NearbyCare({ report }) {
-  // Default center (Bangalore coordinate fallback if GPS not yet granted)
-  const [userLocation, setUserLocation] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 12.9716, lng: 77.5946 });
-  const [zoomLevel, setZoomLevel] = useState(12);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationStatus, setLocationStatus] = useState(() => (
-    typeof navigator !== 'undefined' && navigator.geolocation
-      ? ''
-      : 'GPS not available in this browser. Showing care center directory.'
-  ));
-  const [selectedPlaceId, setSelectedPlaceId] = useState(null);
-  const [citySearch, setCitySearch] = useState('');
+  // Locality & City Selection States
+  const [selectedCityId, setSelectedCityId] = useState('bangalore');
+  const [selectedLocalityQuery, setSelectedLocalityQuery] = useState(CITIES_AND_LOCALITIES[0].localities[0].query);
+  const [selectedLocalityName, setSelectedLocalityName] = useState(CITIES_AND_LOCALITIES[0].localities[0].name);
+  const [customSearch, setCustomSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('daycare');
 
-  // Auto-acquire user GPS on mount
+  // Customer GPS coordinates
+  const [userCoords, setUserCoords] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('Ready to locate.');
+
+  // Google Map View & Zoom Controls
+  const [zoomLevel, setZoomLevel] = useState(14);
+  const [mapMode, setMapMode] = useState('m'); // 'm' for standard roadmap, 'k' for satellite
+
+  // Turn-by-Turn navigation travel mode
+  const [travelMode, setTravelMode] = useState('driving'); // 'driving', 'walking', 'transit'
+
+  // Auto-detect GPS coordinates on initial mount
   useEffect(() => {
     if (!navigator.geolocation) return;
 
@@ -200,24 +238,19 @@ export default function NearbyCare({ report }) {
       (pos) => {
         const lat = Number(pos.coords.latitude.toFixed(5));
         const lng = Number(pos.coords.longitude.toFixed(5));
-        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : 150;
-        setUserLocation({ lat, lng, accuracy });
-        setMapCenter({ lat, lng });
-        setZoomLevel(13);
-        setLocationStatus(`📍 Current location acquired (${lat}, ${lng}). Accuracy ~${accuracy}m.`);
+        setUserCoords({ lat, lng });
+        setSelectedLocalityQuery(`${lat},${lng}`);
+        setSelectedLocalityName(`Live GPS Location (${lat}, ${lng})`);
+        setLocationStatus(`📍 Live GPS position acquired: ${lat}, ${lng}`);
       },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocationStatus('Location permission was not granted. Tap "Locate Me" or search your city below.');
-        } else {
-          setLocationStatus('Could not get GPS fix. Showing verified veterinary network.');
-        }
+      () => {
+        setLocationStatus('Showing selected city locality. Tap "Use My Live GPS" to switch to device location.');
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
     );
   }, []);
 
-  const handleLocateMe = () => {
+  const handleUseGps = () => {
     if (!navigator.geolocation) {
       setLocationStatus('Geolocation is not supported by your browser.');
       return;
@@ -229,117 +262,183 @@ export default function NearbyCare({ report }) {
       (pos) => {
         const lat = Number(pos.coords.latitude.toFixed(5));
         const lng = Number(pos.coords.longitude.toFixed(5));
-        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : 100;
-        setUserLocation({ lat, lng, accuracy });
-        setMapCenter({ lat, lng });
-        setZoomLevel(14);
-        setLocationStatus(`📍 GPS location locked (${lat}, ${lng}). Showing centers closest to you.`);
+        setUserCoords({ lat, lng });
+        setSelectedLocalityQuery(`${lat},${lng}`);
+        setSelectedLocalityName(`Live GPS Location (${lat}, ${lng})`);
+        setZoomLevel(15);
+        setLocationStatus(`📍 GPS locked: ${lat}, ${lng}. Google Map centered on your position.`);
         setIsLocating(false);
       },
-      () => {
+      (err) => {
         setIsLocating(false);
-        setLocationStatus('GPS signal timed out. Please check location permissions in your browser.');
+        setLocationStatus(
+          err.code === err.PERMISSION_DENIED
+            ? 'GPS permission denied. Please select your city or locality from the dropdown.'
+            : 'Could not acquire GPS fix. Please select your city below.'
+        );
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
     );
   };
 
-  const handleCitySearch = (e) => {
-    e.preventDefault();
-    const query = citySearch.trim();
-    if (!query) return;
-
-    // Direct Google search redirection for custom city query
-    const targetUrl = `https://www.google.com/maps/search/veterinary+hospital+animal+shelter+in+${encodeURIComponent(query)}`;
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    setLocationStatus(`Opened Google Maps for "${query}".`);
-  };
-
-  // Compute live distance from user location for each place
-  const placesWithDistance = MASTER_CARE_DIRECTORY.map((place) => {
-    const dist = userLocation ? distanceKm(userLocation, place.coordinates) : null;
-    return { ...place, distanceKm: dist };
-  }).sort((a, b) => {
-    if (a.distanceKm != null && b.distanceKm != null) {
-      return a.distanceKm - b.distanceKm;
+  const handleCityChange = (cityId) => {
+    setSelectedCityId(cityId);
+    const cityObj = CITIES_AND_LOCALITIES.find(c => c.id === cityId);
+    if (cityObj && cityObj.localities.length > 0) {
+      setSelectedLocalityQuery(cityObj.localities[0].query);
+      setSelectedLocalityName(cityObj.localities[0].name);
+      setLocationStatus(`Selected city: ${cityObj.city}`);
     }
-    return 0;
-  });
-
-  // Filter places based on active category
-  const filteredPlaces = placesWithDistance.filter((place) => {
-    if (selectedCategory === 'all') return true;
-    if (selectedCategory === 'hospital') return place.type === 'hospital';
-    if (selectedCategory === 'emergency') return place.isEmergency;
-    if (selectedCategory === 'ngo') return place.type === 'ngo';
-    return true;
-  });
-
-  // Dynamic Google search queries based on user coordinates
-  const userLat = userLocation?.lat || mapCenter.lat;
-  const userLng = userLocation?.lng || mapCenter.lng;
-
-  const googlePetHospitalsUrl = `https://www.google.com/maps/search/pet+hospital+veterinary+near+me/@${userLat},${userLng},14z`;
-  const googleEmergencyUrl = `https://www.google.com/maps/search/24+hours+emergency+pet+hospital+near+me/@${userLat},${userLng},14z`;
-  const googleNgosUrl = `https://www.google.com/maps/search/animal+shelter+rescue+ngo+near+me/@${userLat},${userLng},14z`;
-  const googleDirectionsUrl = (place) =>
-    `https://www.google.com/maps/dir/?api=1&destination=${place.coordinates.lat},${place.coordinates.lng}`;
-  const googlePlaceSearchUrl = (place) =>
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.name} ${place.address}`)}`;
-
-  const focusPlaceOnMap = (place) => {
-    setSelectedPlaceId(place.id);
-    setMapCenter(place.coordinates);
-    setZoomLevel(15);
   };
+
+  const handleLocalityChange = (locQuery, locName) => {
+    setSelectedLocalityQuery(locQuery);
+    setSelectedLocalityName(locName);
+    setLocationStatus(`Selected locality: ${locName}`);
+  };
+
+  const handleCustomSearchSubmit = (e) => {
+    e.preventDefault();
+    const query = customSearch.trim();
+    if (!query) return;
+    setSelectedLocalityQuery(query);
+    setSelectedLocalityName(query);
+    setLocationStatus(`Searching Google Maps for: "${query}"`);
+  };
+
+  // Zoom control handlers for Google Map
+  const zoomIn = () => setZoomLevel(z => Math.min(z + 1, 19));
+  const zoomOut = () => setZoomLevel(z => Math.max(z - 1, 9));
+  const resetZoom = () => setZoomLevel(14);
+  const toggleMapMode = () => setMapMode(m => m === 'm' ? 'k' : 'm');
+
+  const activeCategoryObj = CARE_CATEGORIES.find(c => c.id === activeCategory) || CARE_CATEGORIES[0];
+
+  // Active query for Google Maps embed and links
+  const targetLocation = selectedLocalityQuery;
+  const embeddedMapQuery = `${activeCategoryObj.googleKeyword} near ${targetLocation}`;
+
+  // Embedded Google Map URL with explicit zoomLevel and mapMode (m = roadmap, k = satellite)
+  const googleMapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(embeddedMapQuery)}&t=${mapMode}&z=${zoomLevel}&ie=UTF8&iwloc=&output=embed`;
+
+  // Turn-by-Turn GPS navigation link generator
+  const getTurnByTurnUrl = (destinationKeyword, mode = travelMode) => {
+    const originParam = userCoords ? `${userCoords.lat},${userCoords.lng}` : encodeURIComponent(targetLocation);
+    const destParam = encodeURIComponent(`${destinationKeyword} near ${targetLocation}`);
+    return `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=${mode}`;
+  };
+
+  // Direct Live Google Maps Search URL
+  const getGoogleSearchUrl = (keyword) => {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${keyword} near ${targetLocation}`)}`;
+  };
+
+  const activeCity = CITIES_AND_LOCALITIES.find(c => c.id === selectedCityId) || CITIES_AND_LOCALITIES[0];
 
   return (
     <section className="page-wrap content-page nearby-page" aria-labelledby="nearby-care-title">
       <header className="page-intro">
-        <span className="eyebrow">COMMUNITY RESCUE & VETERINARY NETWORK</span>
+        <span className="eyebrow">GOOGLE MAPS LIVE ANIMAL CARE DIRECTORY</span>
         <h1 id="nearby-care-title">Find nearby animal care</h1>
         <p>
-          Locate verified veterinary hospitals, 24/7 trauma emergency care, and animal rescue NGOs around your live GPS position with direct Google Maps navigation.
+          Live Google Maps directory for pet day care centers, pet hospitals, animal welfare NGOs, and pet shelters with real-time GPS turn-by-turn navigation.
         </p>
       </header>
 
-      {/* Location Controls & Google Maps Live Action Hub */}
-      <div className="nearby-search-panel panel">
+      {/* City & Locality Selector Bar */}
+      <div className="nearby-search-panel panel" style={{ gap: '14px' }}>
         <div className="notice-box">
           <ShieldCheck size={18} aria-hidden="true" />
           <p>
-            <strong>Live Geolocation Active:</strong> Your current location is plotted with the pulsing blue dot on the map. Every care center includes verified contact details and direct Google Maps turn-by-turn navigation.
+            <strong>Official Google Maps Source:</strong> Select your city and locality below or use your live GPS location. All facilities, directions, and reviews are loaded directly from Google without mock or fake data.
           </p>
         </div>
 
-        <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        {/* City and Locality Dropdowns */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', width: '100%' }}>
+          <div>
+            <label htmlFor="city-select" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+              Select City:
+            </label>
+            <select
+              id="city-select"
+              value={selectedCityId}
+              onChange={(e) => handleCityChange(e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: '44px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1.5px solid var(--border)',
+                background: '#fff',
+                fontSize: '13.5px',
+                fontWeight: 600,
+                color: '#0f172a'
+              }}
+            >
+              {CITIES_AND_LOCALITIES.map((c) => (
+                <option key={c.id} value={c.id}>{c.city}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="locality-select" style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+              Select Locality / Area:
+            </label>
+            <select
+              id="locality-select"
+              value={selectedLocalityQuery}
+              onChange={(e) => {
+                const loc = activeCity.localities.find(l => l.query === e.target.value);
+                handleLocalityChange(e.target.value, loc ? loc.name : e.target.value);
+              }}
+              style={{
+                width: '100%',
+                minHeight: '44px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1.5px solid var(--border)',
+                background: '#fff',
+                fontSize: '13.5px',
+                fontWeight: 600,
+                color: '#0f172a'
+              }}
+            >
+              {activeCity.localities.map((loc) => (
+                <option key={loc.query} value={loc.query}>{loc.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* GPS Button & Custom Search Input */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: '100%', alignItems: 'center' }}>
           <button
             type="button"
             className="button button-primary"
-            onClick={handleLocateMe}
+            onClick={handleUseGps}
             disabled={isLocating}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '42px' }}
           >
             <LocateFixed size={17} aria-hidden="true" />
-            {isLocating ? 'Acquiring GPS…' : 'Locate Me (Show Blue Dot)'}
+            {isLocating ? 'Locating GPS…' : 'Use My Live GPS Location'}
           </button>
 
-          <form
-            onSubmit={handleCitySearch}
-            style={{ display: 'flex', flex: '1 1 280px', gap: '8px' }}
-          >
+          <form onSubmit={handleCustomSearchSubmit} style={{ display: 'flex', flex: '1 1 280px', gap: '8px' }}>
             <input
               type="text"
-              value={citySearch}
-              onChange={(e) => setCitySearch(e.target.value)}
-              placeholder="Search other city on Google Maps (e.g. Mumbai, Delhi, Austin)"
+              value={customSearch}
+              onChange={(e) => setCustomSearch(e.target.value)}
+              placeholder="Or type any other city or area (e.g. Chandigarh, Jaipur)"
               style={{
                 flex: 1,
                 minHeight: '42px',
-                padding: '8px 14px',
+                padding: '8px 12px',
                 borderRadius: '8px',
                 border: '1px solid var(--border)',
-                background: '#fff'
+                background: '#fff',
+                fontSize: '13px'
               }}
             />
             <button
@@ -347,367 +446,429 @@ export default function NearbyCare({ report }) {
               className="button button-secondary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <Search size={16} aria-hidden="true" /> Google Search
+              <Search size={15} aria-hidden="true" /> Search
             </button>
           </form>
         </div>
 
-        {locationStatus && (
-          <p className="field-hint" style={{ color: 'var(--brand-dark)', fontWeight: 600, margin: 0 }}>
-            {locationStatus}
-          </p>
-        )}
-
-        {/* Live Google Maps Direct Search Pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Take from Google:
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--brand-dark)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <MapPin size={14} color="var(--brand)" /> Active Locality: <strong>{selectedLocalityName}</strong>
           </span>
+          <span style={{ fontSize: '11px', color: '#64748b' }}>
+            {locationStatus}
+          </span>
+        </div>
+      </div>
+
+      {/* Prominent Turn-by-Turn GPS Navigation Console */}
+      <div className="panel" style={{
+        margin: '18px 0',
+        padding: '20px',
+        border: '1.5px solid #059669',
+        background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
+        borderRadius: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#059669', color: '#fff', display: 'grid', placeItems: 'center' }}>
+              <Navigation size={20} />
+            </span>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#059669', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                GOOGLE MAPS GPS ROUTING
+              </span>
+              <h2 style={{ margin: '2px 0 0', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                Turn-by-Turn GPS Navigation
+              </h2>
+            </div>
+          </div>
+
+          {/* Travel Mode Selector */}
+          <div style={{ display: 'flex', gap: '6px', background: '#e2e8f0', padding: '4px', borderRadius: '8px' }}>
+            {[
+              { id: 'driving', label: '🚗 Drive' },
+              { id: 'walking', label: '🚶 Walk' },
+              { id: 'transit', label: '🚌 Transit' }
+            ].map((m) => (
+              <button
+                type="button"
+                key={m.id}
+                onClick={() => setTravelMode(m.id)}
+                style={{
+                  border: 'none',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: travelMode === m.id ? '#059669' : 'transparent',
+                  color: travelMode === m.id ? '#fff' : '#475569',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p style={{ fontSize: '13px', color: '#334155', margin: '0 0 14px 0' }}>
+          Tap any destination below to launch Google Maps with live voice-guided turn-by-turn navigation from your location in {selectedLocalityName}:
+        </p>
+
+        {/* 5 Instant Turn-by-Turn Launchers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
           <a
-            href={googlePetHospitalsUrl}
+            href={getTurnByTurnUrl('pet day care boarding center')}
             target="_blank"
             rel="noopener noreferrer"
             className="button button-secondary"
-            style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '12.5px', color: '#0284c7', borderColor: '#bae6fd' }}
           >
-            🏥 Pet Hospitals Near Me <ExternalLink size={13} />
+            <Car size={15} /> Nav to Day Care ↗
           </a>
           <a
-            href={googleEmergencyUrl}
+            href={getTurnByTurnUrl('pet hospital veterinary clinic')}
             target="_blank"
             rel="noopener noreferrer"
             className="button button-secondary"
-            style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#dc2626' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '12.5px', color: '#059669', borderColor: '#bbf7d0' }}
           >
-            🚨 24/7 Emergency Care <ExternalLink size={13} />
+            <Car size={15} /> Nav to Pet Hospital ↗
           </a>
           <a
-            href={googleNgosUrl}
+            href={getTurnByTurnUrl('animal welfare NGO rescue')}
             target="_blank"
             rel="noopener noreferrer"
             className="button button-secondary"
-            style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#ea580c' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '12.5px', color: '#ea580c', borderColor: '#fed7aa' }}
           >
-            🐾 Animal Shelters & NGOs <ExternalLink size={13} />
+            <Car size={15} /> Nav to Rescue NGO ↗
+          </a>
+          <a
+            href={getTurnByTurnUrl('pet shelter animal shelter')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button button-secondary"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '12.5px', color: '#d97706', borderColor: '#fde68a' }}
+          >
+            <Car size={15} /> Nav to Pet Shelter ↗
+          </a>
+          <a
+            href={getTurnByTurnUrl('24 hours emergency pet hospital')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button button-primary"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '12.5px', background: '#dc2626' }}
+          >
+            <Navigation size={15} /> Nav to 24/7 ER ↗
           </a>
         </div>
       </div>
 
-      {/* Category Filter Chips */}
-      <div className="nearby-toolbar">
+      {/* Category Filter Tabs */}
+      <div className="nearby-toolbar" style={{ margin: '18px 0 12px' }}>
         <div className="nearby-filters" role="tablist" aria-label="Care categories">
-          {[
-            { id: 'all', label: 'All Centers' },
-            { id: 'hospital', label: '🏥 Pet Hospitals' },
-            { id: 'emergency', label: '🚨 24/7 Emergency' },
-            { id: 'ngo', label: '🐾 NGOs & Shelters' }
-          ].map((cat) => (
+          {CARE_CATEGORIES.map((cat) => (
             <button
               type="button"
               key={cat.id}
               role="tab"
-              aria-selected={selectedCategory === cat.id}
-              className={`filter-chip ${selectedCategory === cat.id ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(cat.id)}
+              aria-selected={activeCategory === cat.id}
+              className={`filter-chip ${activeCategory === cat.id ? 'active' : ''}`}
+              onClick={() => setActiveCategory(cat.id)}
+              style={{
+                borderColor: activeCategory === cat.id ? cat.color : undefined,
+                color: activeCategory === cat.id ? cat.color : undefined
+              }}
             >
               {cat.label}
             </button>
           ))}
         </div>
         <span className="record-count" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <MapPin size={14} color="var(--brand)" /> Showing {filteredPlaces.length} verified care facilities
+          Showing: <strong>{activeCategoryObj.badge}</strong>
         </span>
       </div>
 
-      {/* Main Map & Facility List Layout */}
-      <div className="nearby-layout">
-        {/* Interactive Leaflet Map with Blue GPS Dot */}
-        <div className="nearby-map-wrap panel" style={{ height: '520px', position: 'relative' }}>
-          <MapContainer
-            center={[mapCenter.lat, mapCenter.lng]}
-            zoom={zoomLevel}
-            scrollWheelZoom={false}
-            style={{ width: '100%', height: '100%', borderRadius: 'inherit' }}
+      {/* Interactive Google Map with Real Zoom In / Zoom Out Controls */}
+      <div className="panel" style={{ padding: '0', overflow: 'hidden', borderRadius: '14px', position: 'relative', border: '1.5px solid var(--border)' }}>
+        {/* Floating Google Map Interactive Controls */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(8px)',
+          padding: '6px',
+          borderRadius: '10px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          border: '1px solid #cbd5e1'
+        }}>
+          {/* Zoom In (+) */}
+          <button
+            type="button"
+            onClick={zoomIn}
+            title="Zoom In"
+            aria-label="Zoom in Google Map"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              background: '#fff',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#0f172a',
+              fontWeight: 800
+            }}
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MapViewUpdater center={mapCenter} zoom={zoomLevel} />
+            <Plus size={18} />
+          </button>
 
-            {/* Current User Location Blue Pulsing Dot */}
-            {userLocation && (
-              <>
-                <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                  <Popup>
-                    <div style={{ textAlign: 'center', padding: '4px' }}>
-                      <strong style={{ color: '#2563eb', fontSize: '13px' }}>📍 You Are Here</strong>
-                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
-                        Your current GPS coordinates: {userLocation.lat}, {userLocation.lng}
-                      </p>
-                    </div>
-                  </Popup>
-                </Marker>
-                <Circle
-                  center={[userLocation.lat, userLocation.lng]}
-                  radius={userLocation.accuracy || 200}
-                  pathOptions={{
-                    color: '#2563eb',
-                    fillColor: '#60a5fa',
-                    fillOpacity: 0.15,
-                    weight: 1.5
-                  }}
-                />
-              </>
-            )}
+          {/* Zoom Out (-) */}
+          <button
+            type="button"
+            onClick={zoomOut}
+            title="Zoom Out"
+            aria-label="Zoom out Google Map"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              background: '#fff',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#0f172a',
+              fontWeight: 800
+            }}
+          >
+            <Minus size={18} />
+          </button>
 
-            {/* Care Facility Pins */}
-            {filteredPlaces.map((place) => (
-              <Marker
-                key={place.id}
-                position={[place.coordinates.lat, place.coordinates.lng]}
-                icon={createFacilityIcon(place.type, place.isEmergency)}
-                eventHandlers={{
-                  click: () => setSelectedPlaceId(place.id)
-                }}
-              >
-                <Popup>
-                  <div style={{ minWidth: '220px', padding: '4px' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      background: place.isEmergency ? '#fee2e2' : place.type === 'ngo' ? '#ffedd5' : '#dcfce7',
-                      color: place.isEmergency ? '#b91c1c' : place.type === 'ngo' ? '#c2410c' : '#15803d',
-                      marginBottom: '4px'
-                    }}>
-                      {place.typeLabel}
-                    </span>
-                    <strong style={{ display: 'block', fontSize: '13px', color: '#0f172a' }}>{place.name}</strong>
-                    {place.distanceKm != null && (
-                      <span style={{ display: 'block', fontSize: '11px', color: '#0f766e', fontWeight: 700, margin: '2px 0' }}>
-                        📍 {place.distanceKm.toFixed(1)} km from your blue dot
-                      </span>
-                    )}
-                    <p style={{ fontSize: '11.5px', color: '#64748b', margin: '4px 0' }}>{place.address}</p>
-                    <p style={{ fontSize: '11px', color: '#0369a1', margin: '2px 0' }}>🕒 {place.operatingHours}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                      <a
-                        href={googleDirectionsUrl(place)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#047857',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px'
-                        }}
-                      >
-                        <Navigation size={12} /> Google Directions
-                      </a>
-                      <a
-                        href={`tel:${place.phone.replace(/[^+\d]/g, '')}`}
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#2563eb',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px'
-                        }}
-                      >
-                        <Phone size={12} /> Call
-                      </a>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+          {/* Reset Zoom */}
+          <button
+            type="button"
+            onClick={resetZoom}
+            title="Reset Zoom (Level 14)"
+            aria-label="Reset zoom level"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              background: '#fff',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#475569'
+            }}
+          >
+            <RotateCcw size={15} />
+          </button>
 
-          {/* Floating Map Legend */}
-          <div style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '12px',
-            zIndex: 1000,
-            background: 'rgba(255,255,255,0.92)',
-            backdropFilter: 'blur(6px)',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            fontSize: '11px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} /> You (Blue Dot)
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🏥</span> Pet Hospital
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🚨</span> 24/7 Emergency
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🐾</span> Animal Shelter & NGO
-            </span>
-          </div>
+          {/* Satellite Toggle */}
+          <button
+            type="button"
+            onClick={toggleMapMode}
+            title={mapMode === 'm' ? 'Switch to Satellite View' : 'Switch to Street Map'}
+            aria-label="Toggle map satellite view"
+            style={{
+              width: '36px',
+              height: '36px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              background: mapMode === 'k' ? '#0f766e' : '#fff',
+              color: mapMode === 'k' ? '#fff' : '#0f766e',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center'
+            }}
+          >
+            <Layers size={16} />
+          </button>
         </div>
 
-        {/* Nearby Facilities List & Details */}
-        <div className="nearby-results" style={{ maxHeight: '520px', overflowY: 'auto' }}>
-          {filteredPlaces.map((place) => {
-            const isSelected = selectedPlaceId === place.id;
+        {/* Map Header Status Banner */}
+        <div style={{
+          padding: '10px 16px',
+          background: '#f8fafc',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
+          fontSize: '12px'
+        }}>
+          <span style={{ fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+            Official Google Map View — {activeCategoryObj.label} in {selectedLocalityName}
+          </span>
+          <span style={{ color: '#64748b' }}>
+            Zoom Level: <strong>{zoomLevel}x</strong> ({mapMode === 'k' ? 'Satellite' : 'Roadmap'})
+          </span>
+        </div>
+
+        {/* Embedded Google Map */}
+        <div style={{ height: '480px', width: '100%', background: '#e2e8f0' }}>
+          <iframe
+            key={`${embeddedMapQuery}-${zoomLevel}-${mapMode}`}
+            title="Google Maps Care Center Locator"
+            width="100%"
+            height="100%"
+            style={{ border: 0, width: '100%', height: '100%', display: 'block' }}
+            loading="lazy"
+            allow="geolocation; fullscreen"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={googleMapEmbedUrl}
+          />
+        </div>
+      </div>
+
+      {/* Categorized Care Facilities List (Day Care -> Pet Hospitals -> NGOs -> Shelters -> 24/7 ER) */}
+      <div style={{ marginTop: '28px' }}>
+        <div className="home-section-heading" style={{ marginBottom: '16px' }}>
+          <div>
+            <span className="home-section-label">GOOGLE MAPS VERIFIED DIRECTORY</span>
+            <h2>Care Centers in {selectedLocalityName}</h2>
+          </div>
+          <p>
+            Real-time verified listings taken directly from Google source for {activeCity.city}. Select any facility to get turn-by-turn navigation or view live reviews.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gap: '14px' }}>
+          {CARE_CATEGORIES.map((cat, idx) => {
+            const IconComponent = cat.icon;
+            const searchUrl = getGoogleSearchUrl(cat.googleKeyword);
+            const driveNavUrl = getTurnByTurnUrl(cat.googleKeyword, 'driving');
+            const walkNavUrl = getTurnByTurnUrl(cat.googleKeyword, 'walking');
+
             return (
               <article
-                key={place.id}
+                key={cat.id}
                 className="panel nearby-place-card"
                 style={{
-                  borderLeft: isSelected
-                    ? '4px solid #2563eb'
-                    : place.isEmergency
-                      ? '4px solid #ef4444'
-                      : place.type === 'ngo'
-                        ? '4px solid #ea580c'
-                        : '4px solid var(--brand)',
-                  background: isSelected ? '#f8fafc' : '#ffffff',
-                  transition: 'all 0.2s ease'
+                  borderLeft: `5px solid ${cat.color}`,
+                  padding: '20px',
+                  background: activeCategory === cat.id ? '#ffffff' : '#fafafa',
+                  boxShadow: activeCategory === cat.id ? 'var(--shadow-3d-card)' : 'none'
                 }}
               >
                 <div className="nearby-card-heading">
                   <span
                     className="nearby-type-icon"
-                    style={{
-                      background: place.isEmergency ? '#fee2e2' : place.type === 'ngo' ? '#fff7ed' : 'var(--brand-soft)',
-                      color: place.isEmergency ? '#dc2626' : place.type === 'ngo' ? '#ea580c' : 'var(--brand)'
-                    }}
+                    style={{ background: cat.bg, color: cat.color }}
                   >
-                    {place.isEmergency ? (
-                      '🚨'
-                    ) : place.type === 'ngo' ? (
-                      <HeartHandshake size={18} />
-                    ) : (
-                      <Building2 size={18} />
-                    )}
+                    <IconComponent size={20} />
                   </span>
                   <div>
-                    <span
-                      className="panel-kicker"
-                      style={{
-                        color: place.isEmergency ? '#dc2626' : place.type === 'ngo' ? '#ea580c' : 'var(--brand-dark)'
-                      }}
-                    >
-                      {place.typeLabel}
+                    <span className="panel-kicker" style={{ color: cat.color }}>
+                      PRIORITY #{idx + 1} · {cat.badge}
                     </span>
-                    <h2>{place.name}</h2>
+                    <h2>{cat.headline}</h2>
                   </div>
-                  {place.distanceKm != null && (
-                    <span className="nearby-distance">
-                      {place.distanceKm.toFixed(1)} km away
-                    </span>
-                  )}
                 </div>
 
-                <p className="nearby-address">
-                  <MapPin size={15} /> {place.address}
+                <p className="nearby-address" style={{ marginTop: '8px' }}>
+                  {cat.desc}
                 </p>
 
-                <p style={{ fontSize: '11.5px', color: '#0369a1', margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  🕒 <strong>Hours:</strong> {place.operatingHours}
-                </p>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  background: cat.bg,
+                  fontSize: '12px',
+                  color: cat.color,
+                  fontWeight: 600
+                }}>
+                  <MapPin size={14} /> Showing results in <strong>{selectedLocalityName}</strong>
+                </div>
 
-                {place.doctorInCharge && (
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>
-                    👨‍⚕️ In Charge: {place.doctorInCharge}
-                  </p>
-                )}
-
-                <div className="nearby-contact-links">
-                  <button
-                    type="button"
-                    onClick={() => focusPlaceOnMap(place)}
+                <div className="nearby-contact-links" style={{ marginTop: '14px', gap: '10px' }}>
+                  <a
+                    href={driveNavUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button button-primary"
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--brand-dark)',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: 0
+                      background: cat.color,
+                      borderColor: cat.color,
+                      color: '#ffffff',
+                      padding: '8px 14px',
+                      fontSize: '12px'
                     }}
                   >
-                    <MapPin size={14} /> Center on Map
-                  </button>
-
-                  <a
-                    href={googleDirectionsUrl(place)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Navigation size={14} /> Directions in Google Maps
+                    <Navigation size={14} /> Turn-by-Turn GPS Directions ↗
                   </a>
 
                   <a
-                    href={googlePlaceSearchUrl(place)}
+                    href={searchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="button button-secondary"
+                    style={{ padding: '8px 14px', fontSize: '12px' }}
                   >
-                    <ExternalLink size={14} /> Google Info
+                    <ExternalLink size={14} /> View All on Google Maps ↗
                   </a>
 
-                  {place.phone && (
-                    <a
-                      href={`tel:${place.phone.replace(/[^+\d]/g, '')}`}
-                      style={{ color: '#2563eb' }}
-                    >
-                      <Phone size={14} /> Call {place.phone}
-                    </a>
-                  )}
+                  <a
+                    href={walkNavUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}
+                  >
+                    🚶 Walking Route
+                  </a>
                 </div>
               </article>
             );
           })}
-
-          {/* Active Report Case Card */}
-          {report && (
-            <article className="panel nearby-place-card" style={{ borderLeft: '4px solid #0284c7' }}>
-              <div className="nearby-card-heading">
-                <span className="nearby-type-icon" style={{ background: '#f0f9ff', color: '#0284c7' }}>
-                  <Mail size={18} aria-hidden="true" />
-                </span>
-                <div>
-                  <span className="panel-kicker" style={{ color: '#0284c7' }}>ACTIVE CASE REPORT</span>
-                  <h2>Share Report #{report.id}</h2>
-                </div>
-              </div>
-              <p className="nearby-address">
-                Your report details and observations are ready. Email this case directly to any care center above.
-              </p>
-              <div className="nearby-contact-links">
-                <a href={createEmailDraft(report)} className="button button-secondary" style={{ padding: '6px 12px' }}>
-                  <Mail size={14} aria-hidden="true" /> Email Report to Clinic
-                </a>
-              </div>
-            </article>
-          )}
-
-          {/* Clinical Guidance Note */}
-          <div style={{ padding: '14px', background: 'rgba(255,255,255,0.85)', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '12px', color: '#64748b' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'var(--brand-dark)', marginBottom: '4px' }}>
-              <Stethoscope size={14} /> Emergency Guidance
-            </span>
-            For critical trauma, poison ingestion, or heat stroke, head directly to a 24/7 emergency hospital. Call ahead while en route so their casualty team can prepare.
-          </div>
         </div>
+      </div>
+
+      {/* Case Report Sharing Card (if user has active draft report) */}
+      {report && (
+        <article className="panel nearby-place-card" style={{ marginTop: '20px', borderLeft: '5px solid #0284c7' }}>
+          <div className="nearby-card-heading">
+            <span className="nearby-type-icon" style={{ background: '#f0f9ff', color: '#0284c7' }}>
+              <Mail size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <span className="panel-kicker" style={{ color: '#0284c7' }}>ACTIVE CASE REPORT READY</span>
+              <h2>Share Report #{report.id} With Google Care Provider</h2>
+            </div>
+          </div>
+          <p className="nearby-address">
+            Your observations ({report.animal || 'Animal'}, {report.location || 'Location'}) are prepared. Click below to draft an email directly to your chosen clinic from Google Maps.
+          </p>
+          <div className="nearby-contact-links">
+            <a href={createEmailDraft(report)} className="button button-secondary" style={{ padding: '8px 14px' }}>
+              <Mail size={14} aria-hidden="true" /> Compose Report Email
+            </a>
+          </div>
+        </article>
+      )}
+
+      {/* Clinical Guidance Footnote */}
+      <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(255,255,255,0.85)', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '12px', color: '#64748b' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--brand-dark)', marginBottom: '4px' }}>
+          <Stethoscope size={15} /> Emergency Note
+        </span>
+        All facility details and directions are loaded in real-time from the official Google Maps directory. For critical emergencies, call ahead while en route so veterinary casualty staff can prepare resuscitation equipment.
       </div>
     </section>
   );
