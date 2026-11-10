@@ -278,3 +278,4 @@ export async function downloadCaseReportPDF(report) {
   doc.save(filename);
   return true;
 }
+

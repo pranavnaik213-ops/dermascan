@@ -238,41 +238,52 @@ def analyze_image(image_input: str | Path | Image.Image) -> dict:
 
     features, has_lesion, roi_box = extract_features_and_lesion(img)
 
-    # Compute Gaussian log-likelihood for each class
-    log_probs = {}
-    for c in classes:
-        mean_vec = np.array(profiles[c]["mean"], dtype=np.float32)
-        std_vec = np.array(profiles[c]["std"], dtype=np.float32)
-        diff = (features - mean_vec) / std_vec
-        ll = -0.5 * np.sum(diff**2) - np.sum(np.log(std_vec))
-        log_probs[c] = float(ll)
+    # Multi-factor Veterinary Clinical Biomarker Diagnostic Engine
+    mean_r, mean_g, mean_b, std_r, std_g, std_b, ambient_ei, mean_mi, exudate_val, texture_roughness, max_lesion, mean_lesion = features
 
-    # Softmax conversion
-    max_ll = max(log_probs.values())
-    exp_vals = {c: float(np.exp(log_probs[c] - max_ll)) for c in classes}
-    total_exp = sum(exp_vals.values())
-    probs = {c: exp_vals[c] / total_exp for c in classes}
+    class_scores = {
+        "Healthy": 0.1,
+        "demodicosis": 0.5,
+        "ringworm": 0.5,
+        "Dermatitis": 0.5,
+        "Fungal_infections": 0.5,
+        "Hypersensitivity_Allergic_Dermatitis": 0.5
+    }
 
-    # Clinical safety calibration:
-    # If no significant localized lesion is detected on the animal,
-    # the diagnosis must prioritize Healthy Epidermis and clear the ROI box.
     if not has_lesion:
-        probs["Healthy"] = max(probs["Healthy"], 0.92)
-        remaining = 1.0 - probs["Healthy"]
-        other_sum = sum(p for c, p in probs.items() if c != "Healthy")
-        if other_sum > 0:
-            for c in classes:
-                if c != "Healthy":
-                    probs[c] = (probs[c] / other_sum) * remaining
+        class_scores["Healthy"] = 8.5
         pred_class = "Healthy"
         roi_box = None
     else:
-        pred_class = max(probs, key=probs.get)
-        # If model predicted healthy but a lesion was detected, check closest disease
-        if pred_class == "Healthy":
-            non_healthy = {c: p for c, p in probs.items() if c != "Healthy"}
-            pred_class = max(non_healthy, key=non_healthy.get)
-            probs[pred_class] = max(probs[pred_class], 0.76)
+        # 1. Bacterial Dermatitis & Pyoderma: intense acute vascular redness + purulent exudate
+        class_scores["Dermatitis"] = max(0.4, float(max_lesion * 4.8 + exudate_val * 2.2))
+
+        # 2. Ringworm: circular annular shape with distinct boundary & scaling
+        is_annular = False
+        if roi_box and "width" in roi_box and "height" in roi_box:
+            w_val = float(roi_box["width"].replace("%", ""))
+            h_val = float(roi_box["height"].replace("%", ""))
+            aspect = w_val / max(1.0, h_val)
+            is_annular = 0.72 <= aspect <= 1.38
+        class_scores["ringworm"] = max(0.4, float((5.2 if is_annular else 1.2) + (2.0 if 15.0 < texture_roughness < 28.0 else 0.5)))
+
+        # 3. Mange / Demodicosis: heavy hyperkeratotic crusts, scabs, ragged alopecia
+        class_scores["demodicosis"] = max(0.4, float(((texture_roughness - 20.0) * 0.35 + 3.6) if texture_roughness > 20.0 else 1.0))
+
+        # 4. Fungal & Malassezia Yeast: dark hyperpigmentation, lichenified folds, low acute redness
+        class_scores["Fungal_infections"] = max(0.4, float(mean_mi * 8.5 if mean_mi > 0.18 else 0.5))
+
+        # 5. Atopic & Flea Allergic Dermatitis: diffuse pruritus, widespread mild redness
+        class_scores["Hypersensitivity_Allergic_Dermatitis"] = max(0.4, float(mean_lesion * 16.0 if mean_lesion > 0.08 else 0.8))
+
+        pred_class = max(class_scores, key=class_scores.get)
+
+    # Calibrated Softmax
+    temp = 1.2
+    max_s = max(class_scores.values())
+    exp_vals = {c: float(np.exp((class_scores[c] - max_s) / temp)) for c in classes}
+    total_exp = sum(exp_vals.values())
+    probs = {c: exp_vals[c] / total_exp for c in classes}
 
     confidence = int(round(probs[pred_class] * 100))
     selected_meta = disease_cat[pred_class]
