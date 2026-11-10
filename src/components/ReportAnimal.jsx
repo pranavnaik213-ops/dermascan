@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Camera, CheckCircle2, FileText, LocateFixed, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, Camera, CheckCircle2, Download, FileText, LocateFixed, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import CameraModal from './CameraModal';
+import { downloadCaseReportPDF } from '../services/pdfReportGenerator';
 
 const DRAFT_KEY = 'dermascan_draft_report';
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
@@ -131,6 +132,13 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
       const completeReport = { ...report, ...result };
       setSavedReport(completeReport);
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* The report is already saved. */ }
+
+      // Automatically download PDF report to reporter device
+      try {
+        await downloadCaseReportPDF(completeReport);
+      } catch (pdfErr) {
+        console.warn('[ReportAnimal] Auto-download PDF error:', pdfErr);
+      }
     } catch {
       setSaveError('The report could not be saved. Your draft is still on this device; try again.');
     } finally {
@@ -149,9 +157,42 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
           <h1 id="report-saved-title">Your report is ready</h1>
           <p>{savedLocally ? 'It was saved in this browser because server storage is unavailable.' : sessionOnly ? 'Browser storage is unavailable, so this report will stay on this page until you leave.' : 'It was saved to the DermaScan server.'} It has not been sent to a veterinarian or rescue group.</p>
           <div className="report-reference"><span>Reference</span><strong>{savedReport.id}</strong></div>
-          <div className="report-confirmation-actions">
-            <button type="button" className="button button-primary" onClick={() => setActiveTab('help')}>Find local care <ArrowRight size={16} aria-hidden="true" /></button>
-            <button type="button" className="button button-secondary" onClick={() => { setSavedReport(null); setAnimal(''); setLocation(''); setLandmark(''); setObservations(''); setPhoto(null); setCoordinates(null); }}>Create another report</button>
+
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            background: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            borderRadius: '8px',
+            color: '#065f46',
+            fontSize: '13px',
+            fontWeight: 600,
+            margin: '14px 0 20px'
+          }}>
+            <Download size={16} /> Official PDF report has been downloaded to your device
+          </div>
+
+          <div className="report-confirmation-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+            <button type="button" className="button button-primary" onClick={() => setActiveTab('help')}>
+              Find local care <ArrowRight size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => downloadCaseReportPDF(savedReport)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Download size={15} aria-hidden="true" /> Download PDF again
+            </button>
+            <button
+              type="button"
+              className="button button-outline"
+              onClick={() => { setSavedReport(null); setAnimal(''); setLocation(''); setLandmark(''); setObservations(''); setPhoto(null); setCoordinates(null); }}
+            >
+              Create another report
+            </button>
           </div>
         </div>
       </section>

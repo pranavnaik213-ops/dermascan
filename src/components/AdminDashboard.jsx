@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import { caseStorage } from '../services/caseStorage';
+import { downloadCaseReportPDF } from '../services/pdfReportGenerator';
 
 const ADMIN_PASSWORD = '0987';
 
@@ -689,6 +690,16 @@ export default function AdminDashboard({ setActiveTab }) {
                           <button
                             type="button"
                             className="button button-secondary"
+                            onClick={() => downloadCaseReportPDF(report)}
+                            title="Download official case PDF report"
+                            style={{ padding: '6px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Download size={13} /> PDF
+                          </button>
+
+                          <button
+                            type="button"
+                            className="button button-secondary"
                             onClick={() => {
                               setInspectingReport(report);
                               setAdminNoteInput(report.adminNotes || '');
@@ -867,15 +878,25 @@ export default function AdminDashboard({ setActiveTab }) {
                   marginBottom: '10px'
                 }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={handleSaveAdminNote}
-                  style={{ padding: '6px 14px', fontSize: '12px' }}
-                >
-                  Save Internal Note
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={handleSaveAdminNote}
+                    style={{ padding: '6px 14px', fontSize: '12px' }}
+                  >
+                    Save Internal Note
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => downloadCaseReportPDF(inspectingReport)}
+                    style={{ padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Download size={13} /> Download Case PDF
+                  </button>
+                </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>Change Status:</span>
