@@ -20,10 +20,7 @@ import {
 } from 'lucide-react';
 import { caseStorage } from '../services/caseStorage';
 
-const ADMIN_CREDENTIALS = {
-  email: 'admin@dermascan.org',
-  password: 'admin123',
-};
+const ADMIN_PASSWORD = '0987';
 
 const STATUS_CONFIG = {
   received: { label: 'Received (New)', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
@@ -38,8 +35,8 @@ export default function AdminDashboard({ setActiveTab }) {
     return localStorage.getItem('dermascan_admin_auth_v3') === 'true';
   });
 
-  const [loginEmail, setLoginEmail] = useState('admin@dermascan.org');
-  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -86,26 +83,21 @@ export default function AdminDashboard({ setActiveTab }) {
     return () => { active = false; };
   }, [isAuthenticated]);
 
-  // Handle Login
+  // Handle Login with password 0987
   const handleLogin = (e) => {
     e.preventDefault();
     setLoginError('');
     setIsLoggingIn(true);
 
-    const emailTrim = loginEmail.trim().toLowerCase();
     const passTrim = loginPassword.trim();
 
-    if (
-      (emailTrim === ADMIN_CREDENTIALS.email && passTrim === ADMIN_CREDENTIALS.password) ||
-      (emailTrim === 'admin' && passTrim === ADMIN_CREDENTIALS.password) ||
-      (emailTrim === ADMIN_CREDENTIALS.email && passTrim === 'vetderm2026')
-    ) {
+    if (passTrim === ADMIN_PASSWORD) {
       localStorage.setItem('dermascan_admin_auth_v3', 'true');
       setIsAuthenticated(true);
       setIsLoggingIn(false);
     } else {
       setIsLoggingIn(false);
-      setLoginError('Invalid administrator credentials. Please check your email and password.');
+      setLoginError('Invalid password. Access restricted to administrator.');
     }
   };
 
@@ -113,6 +105,16 @@ export default function AdminDashboard({ setActiveTab }) {
   const handleLogout = () => {
     localStorage.removeItem('dermascan_admin_auth_v3');
     setIsAuthenticated(false);
+  };
+
+  // Clear all reports completely
+  const handleClearAllReports = async () => {
+    if (window.confirm('Are you sure you want to remove all reported cases from the admin dashboard? This will completely clear stored records.')) {
+      await caseStorage.clearAllReports();
+      setReports([]);
+      setInspectingReport(null);
+      showNotice('All reported data has been removed from the admin dashboard.');
+    }
   };
 
   // Update Status
@@ -203,7 +205,7 @@ export default function AdminDashboard({ setActiveTab }) {
           <form onSubmit={handleLogin} style={{ display: 'grid', gap: '16px' }}>
             <div>
               <label htmlFor="admin-email" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
-                Admin Email / Identity
+                Admin Email / Identity <span style={{ fontWeight: 400, color: '#64748b' }}>(Optional)</span>
               </label>
               <input
                 id="admin-email"
@@ -211,7 +213,6 @@ export default function AdminDashboard({ setActiveTab }) {
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 placeholder="admin@dermascan.org"
-                required
                 style={{
                   width: '100%',
                   minHeight: '44px',
@@ -227,15 +228,16 @@ export default function AdminDashboard({ setActiveTab }) {
 
             <div>
               <label htmlFor="admin-password" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
-                Passkey / Password
+                Administrator Password
               </label>
               <input
                 id="admin-password"
                 type="password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Enter admin password"
+                placeholder="Enter password"
                 required
+                autoFocus
                 style={{
                   width: '100%',
                   minHeight: '44px',
@@ -283,13 +285,9 @@ export default function AdminDashboard({ setActiveTab }) {
               }}
             >
               <Lock size={16} />
-              {isLoggingIn ? 'Authenticating…' : 'Sign in to Admin Dashboard'}
+              {isLoggingIn ? 'Verifying…' : 'Sign in to Admin Dashboard'}
             </button>
           </form>
-
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)', textAlign: 'center', fontSize: '11.5px', color: '#64748b' }}>
-            <span>Default Administrator Credentials: <code>admin@dermascan.org</code> / <code>admin123</code></span>
-          </div>
         </div>
       </section>
     );
@@ -374,8 +372,19 @@ export default function AdminDashboard({ setActiveTab }) {
           <button
             type="button"
             className="button button-secondary"
+            onClick={handleClearAllReports}
+            disabled={reports.length === 0}
+            title="Remove all reported data from dashboard"
+            style={{ padding: '8px 12px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#b91c1c' }}
+          >
+            <Trash2 size={14} /> Clear all data
+          </button>
+
+          <button
+            type="button"
+            className="button button-secondary"
             onClick={handleLogout}
-            style={{ padding: '8px 12px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626' }}
+            style={{ padding: '8px 12px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <LogOut size={14} /> Log out
           </button>

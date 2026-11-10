@@ -9,6 +9,38 @@ const DB_NAME = 'dermascan_permanent_storage_v1';
 const STORE_NAME = 'animal_reports';
 const DB_VERSION = 1;
 const LOCAL_STORAGE_KEY = 'dermascan_clinical_cases_v3';
+const PURGE_FLAG_KEY = 'dermascan_purged_mock_0987_v1';
+
+// One-time automatic cleanup to wipe legacy mock/test cases from all storage layers
+function purgeLegacyMockData() {
+  if (typeof window === 'undefined') return;
+  try {
+    if (localStorage.getItem(PURGE_FLAG_KEY) !== 'true') {
+      localStorage.removeItem('dermascan_clinical_cases_v3');
+      localStorage.removeItem('dermascan_cases_v2');
+      localStorage.removeItem('dermascan_cases');
+      localStorage.removeItem('dermascan_reports');
+      localStorage.removeItem('dermascan_user_reports');
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+      localStorage.setItem(PURGE_FLAG_KEY, 'true');
+
+      if (window.indexedDB) {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onsuccess = () => {
+          const db = req.result;
+          if (db.objectStoreNames.contains(STORE_NAME)) {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).clear();
+          }
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[CaseStorage] Purge legacy mock data error:', err);
+  }
+}
+
+purgeLegacyMockData();
 
 // Open / initialize IndexedDB
 function openDatabase() {
@@ -145,12 +177,46 @@ export const caseStorage = {
       }
     }
 
+    // Filter out any legacy mock, test, or sample cases
+    reports = reports.filter(r => {
+      if (!r || !r.id) return false;
+      const idStr = String(r.id).toUpperCase();
+      if (idStr.includes('MOCK') || idStr.includes('DEMO') || idStr.startsWith('CASE-8')) return false;
+      if (r.isMock || r.isDemo) return false;
+      return true;
+    });
+
     // Sort newest first
     return reports.sort((a, b) => {
       const dateA = new Date(a.reportedAt || a.observedAt || 0).getTime();
       const dateB = new Date(b.reportedAt || b.observedAt || 0).getTime();
       return dateB - dateA;
     });
+  },
+
+  /**
+   * Completely clear all reports from both IndexedDB and localStorage
+   */
+  async clearAllReports() {
+    try {
+      const db = await openDatabase();
+      if (db) {
+        await new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        });
+      }
+    } catch (err) {
+      console.warn('[CaseStorage] clearAllReports IndexedDB error:', err);
+    }
+
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    } catch { /* ignore */ }
+
+    return true;
   },
 
   /**
