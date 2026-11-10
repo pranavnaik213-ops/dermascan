@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Camera, CheckCircle2, FileText, LocateFixed, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, Camera, CheckCircle2, FileText, LocateFixed, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import CameraModal from './CameraModal';
 
 const DRAFT_KEY = 'dermascan_draft_report';
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
@@ -19,7 +20,7 @@ function localDateTime() {
 
 export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) {
   const [draft] = useState(readDraft);
-  const photoInput = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [animal, setAnimal] = useState(draft.animal || initialPhoto?.animalType || '');
   const [location, setLocation] = useState(draft.location || '');
   const [landmark, setLandmark] = useState(draft.landmark || '');
@@ -33,6 +34,25 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
   const [isSaving, setIsSaving] = useState(false);
   const [savedReport, setSavedReport] = useState(null);
   const [saveError, setSaveError] = useState('');
+
+  const [prevInitialPhoto, setPrevInitialPhoto] = useState(initialPhoto);
+  if (initialPhoto !== prevInitialPhoto) {
+    setPrevInitialPhoto(initialPhoto);
+    if (initialPhoto) {
+      if (initialPhoto.photoUrl) {
+        setPhoto({
+          photoUrl: initialPhoto.photoUrl,
+          photoName: initialPhoto.photoName || 'AI Scanned Image'
+        });
+      }
+      if (initialPhoto.animalType) {
+        setAnimal(initialPhoto.animalType);
+      }
+      if (initialPhoto.observations) {
+        setObservations(initialPhoto.observations);
+      }
+    }
+  }
 
   useEffect(() => {
     if (savedReport) return;
@@ -180,15 +200,80 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
         <div className="report-photo-field">
           <div>
             <strong>Photo <span className="optional-label">Optional</span></strong>
-            <p>A photo can help explain your observations. Take one only if it is safe.</p>
+            <p>A photo helps veterinarians assess the animal's condition. Take one only if it is safe.</p>
           </div>
-          {photo?.photoUrl && <img className="report-photo-preview" src={photo.photoUrl} alt="Photo attached to report" />}
-          <div className="report-photo-actions">
-            <button className="button button-secondary" type="button" onClick={() => photoInput.current?.click()}><Camera size={16} aria-hidden="true" />{photo ? 'Change photo' : 'Add photo'}</button>
-            {photo && <button className="inline-button" type="button" onClick={() => setPhoto(null)}>Remove</button>}
+          {photo?.photoUrl && (
+            <img className="report-photo-preview" src={photo.photoUrl} alt="Photo attached to report" />
+          )}
+          <div className="report-photo-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <label
+              htmlFor="report-photo-file-input"
+              className="button button-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                margin: 0
+              }}
+            >
+              <Upload size={16} aria-hidden="true" />
+              {photo ? 'Change photo' : 'Choose photo'}
+            </label>
+
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => setCameraOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Camera size={16} aria-hidden="true" />
+              Take photo
+            </button>
+
+            {photo && (
+              <button
+                type="button"
+                className="button button-outline"
+                onClick={() => setPhoto(null)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ef4444' }}
+              >
+                <Trash2 size={15} aria-hidden="true" />
+                Remove
+              </button>
+            )}
           </div>
-          <input ref={photoInput} className="visually-hidden" type="file" accept="image/*" onChange={handlePhotoChange} aria-label="Attach a photo" />
+
+          <input
+            id="report-photo-file-input"
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            style={{
+              position: 'absolute',
+              width: '1px',
+              height: '1px',
+              padding: 0,
+              margin: '-1px',
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              borderWidth: 0,
+              opacity: 0,
+              pointerEvents: 'none'
+            }}
+            aria-label="Upload photo"
+          />
         </div>
+
+        <CameraModal
+          isOpen={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={(dataUrl) => {
+            setPhoto({ photoUrl: dataUrl, photoName: 'Camera capture' });
+            setError('');
+          }}
+        />
 
         {(error || saveError) && <p className="form-message error-message" role="alert">{error || saveError}</p>}
         <div className="report-form-actions">

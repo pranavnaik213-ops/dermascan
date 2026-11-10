@@ -65,3 +65,4 @@ for cls, stats in class_stats.items():
     print(f"  Mean Redness Ratio:           {np.mean([s['red_ratio'] for s in stats]):.4f} +/- {np.std([s['red_ratio'] for s in stats]):.4f}")
     print(f"  Mean Texture Variance:        {np.mean([s['var'] for s in stats]):.1f} +/- {np.std([s['var'] for s in stats]):.1f}")
     print(f"  Mean Melanin Index (MI):      {np.mean([s['mi'] for s in stats]):.4f} +/- {np.std([s['mi'] for s in stats]):.4f}")
+
