@@ -6,7 +6,6 @@
 
 import { MOCK_NGOS, PRESET_DETECTION_SAMPLES, VERIFIED_PET_HOSPITALS } from '../data/mockData.js';
 import { caseStorage } from './caseStorage.js';
-import { geminiVisionService } from './geminiVisionService.js';
 
 const API_BASE = '/api';
 
@@ -209,25 +208,7 @@ export const api = {
 
     const targetAnimal = payload.animalType || animalType || 'Dog';
 
-    // 1. Google Gemini Multimodal Vision AI (if user configured a free key or preset)
-    if (geminiVisionService.hasKey() && (payload.image || payload.photoUrl) && !payload.presetId) {
-      try {
-        const geminiResult = await geminiVisionService.analyze(payload.image || payload.photoUrl, targetAnimal);
-        if (geminiResult && geminiResult.prediction) {
-          return {
-            ...geminiResult,
-            id: `SCAN-${Date.now()}`,
-            animalType: targetAnimal,
-            photoUrl: payload.image || payload.photoUrl,
-            gradCamUrl: payload.image || payload.photoUrl
-          };
-        }
-      } catch (geminiErr) {
-        console.warn('[AI] Gemini Vision request note, falling back to local clinical model:', geminiErr.message);
-      }
-    }
-
-    // 2. Attempt to query Express backend
+    // 1. Attempt to query Express backend
     try {
       const serverResult = await request('/detect', {
         method: 'POST',
