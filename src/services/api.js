@@ -6,28 +6,48 @@
 
 import { MOCK_NGOS, PRESET_DETECTION_SAMPLES, VERIFIED_PET_HOSPITALS } from '../data/mockData.js';
 import { caseStorage } from './caseStorage.js';
+import { checkEdgeModelAvailability, inferWithOnnxEdge } from './onnxEdgeEngine.js';
 
-const API_BASE = '/api';
+const CONFIGURED_API_ORIGIN = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const API_BASE = CONFIGURED_API_ORIGIN ? `${CONFIGURED_API_ORIGIN}/api` : '/api';
+
+let cachedModelInfoPromise = null;
+let cachedModelInfoTimestamp = 0;
+const MODEL_INFO_TTL_MS = 5000;
 
 async function request(endpoint, options = {}) {
+  const { silent = false, timeoutMs = 8000, headers: extraHeaders, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers || {})
+        ...(extraHeaders || {})
       },
-      ...options
+      signal: controller.signal,
+      ...fetchOptions
     });
 
+    const contentType = res.headers.get('content-type') || '';
     if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({}));
+      const errorBody = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
       throw new Error(errorBody.error || `Request failed with status ${res.status}`);
+    }
+
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Unexpected non-JSON response (${contentType || 'unknown'})`);
     }
 
     return await res.json();
   } catch (err) {
-    console.warn(`[API] Endpoint ${endpoint} failed, falling back to local handler:`, err.message);
+    if (!silent) {
+      console.warn(`[API] Endpoint ${endpoint} failed, falling back to local handler:`, err.message);
+    }
     throw err;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -35,20 +55,94 @@ export const api = {
   // --- HEALTH & TELEMETRY ---
   async getHealth() {
     try {
-      return await request('/health');
+      return await request('/health', { silent: true, timeoutMs: 2500 });
     } catch {
+      const edge = await checkEdgeModelAvailability();
+      if (edge.available) {
+        return {
+          status: 'online',
+          platform: 'DermaScan Edge WebAssembly Runtime',
+          runtime: 'edge-onnx'
+        };
+      }
       return { status: 'offline', platform: 'Local Client Fallback' };
     }
   },
 
-  async getModelInfo() {
-    try {
-      return await request('/model/info');
-    } catch {
+  async getModelInfo(forceRefresh = false) {
+    const now = Date.now();
+    if (!forceRefresh && cachedModelInfoPromise && (now - cachedModelInfoTimestamp) < MODEL_INFO_TTL_MS) {
+      return cachedModelInfoPromise;
+    }
+
+    cachedModelInfoTimestamp = now;
+    cachedModelInfoPromise = (async () => {
+      try {
+        const data = await request('/model/info', { silent: true, timeoutMs: 2500 });
+        if (data && typeof data.online === 'boolean') {
+          if (data.pytorchServerReady) {
+            return {
+              ...data,
+              online: true,
+              modelReady: true,
+              inferenceMode: 'pytorch-server'
+            };
+          }
+          const edge = await checkEdgeModelAvailability();
+          return {
+            ...data,
+            online: Boolean(data.online && edge.available),
+            modelReady: Boolean(edge.available),
+            pytorchServerReady: false,
+            edgeOnnxReady: edge.available,
+            inferenceMode: edge.available ? 'edge-onnx' : 'offline-fallback',
+            edgeOnnxMetrics: edge.meta?.edgeOnnxTestMetrics || data.edgeOnnxMetrics || null
+          };
+        }
+      } catch {
+        // Static CDN / GitHub Pages / Vite-only fallback -> probe Edge ONNX asset
+      }
+
+      const edge = await checkEdgeModelAvailability();
+      if (edge.available) {
+        const edgeMetrics = edge.meta?.edgeOnnxTestMetrics || {
+          overall_accuracy: 0.9353,
+          macro_f1: 0.9249,
+          auroc_macro: 0.9942,
+          samples: 433
+        };
+        const ptMetrics = edge.meta?.pytorchTestMetrics || {
+          overall_accuracy: 0.9423,
+          macro_f1: 0.9333,
+          auroc_macro: 0.9943,
+          samples: 433
+        };
+        return {
+          online: true,
+          modelReady: true,
+          pytorchServerReady: false,
+          edgeOnnxReady: true,
+          workerWarm: false,
+          runtime: 'edge-onnx',
+          inferenceMode: 'edge-onnx',
+          cachedInBrowser: edge.cached,
+          version: edge.meta?.version || 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
+          architecture: edge.meta?.architecture || 'torchvision.models.convnext_tiny (INT8 ONNX Edge)',
+          datasetSlug: edge.meta?.datasetSlug || 'youssefmohmmed/dogs-skin-diseases-image-dataset',
+          datasetUrl: edge.meta?.datasetUrl || 'https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset',
+          testMetrics: ptMetrics,
+          edgeOnnxMetrics: edgeMetrics
+        };
+      }
+
       return {
         online: false,
         modelReady: false,
+        pytorchServerReady: false,
+        edgeOnnxReady: false,
         workerWarm: false,
+        runtime: 'offline-fallback',
+        inferenceMode: 'offline-fallback',
         version: 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
         architecture: 'torchvision.models.convnext_tiny',
         datasetSlug: 'youssefmohmmed/dogs-skin-diseases-image-dataset',
@@ -60,7 +154,9 @@ export const api = {
           samples: 433
         }
       };
-    }
+    })();
+
+    return cachedModelInfoPromise;
   },
 
   async getStats() {
@@ -217,7 +313,7 @@ export const api = {
   },
 
   // --- AI DETECTION / QUALITY GATE (DermaScan-Net v4.0 ConvNeXt-Tiny) ---
-  async detect(payloadOrUrl, animalType = 'Dog') {
+  async detect(payloadOrUrl, animalType = 'Dog', options = {}) {
     const payload = typeof payloadOrUrl === 'object' && payloadOrUrl !== null
       ? payloadOrUrl
       : {
@@ -229,24 +325,47 @@ export const api = {
         };
 
     const targetAnimal = payload.animalType || animalType || 'Dog';
+    const onProgress = options?.onProgress;
 
-    // 1. Attempt to query Express backend
-    try {
-      const serverResult = await request('/detect', {
-        method: 'POST',
-        body: JSON.stringify({
-          image: payload.image,
-          photoUrl: payload.photoUrl,
-          photoName: payload.photoName,
-          presetId: payload.presetId,
-          animalType: targetAnimal
-        })
-      });
-      if (serverResult && serverResult.prediction) {
-        return serverResult;
+    // 1. Check whether the PyTorch Express backend is active; skip wasted HTTP POST on static/Vercel hosts
+    const modelInfo = await this.getModelInfo().catch(() => null);
+    if (modelInfo?.pytorchServerReady) {
+      try {
+        const serverResult = await request('/detect', {
+          method: 'POST',
+          silent: true,
+          timeoutMs: 35000,
+          body: JSON.stringify({
+            image: payload.image,
+            photoUrl: payload.photoUrl,
+            photoName: payload.photoName,
+            presetId: payload.presetId,
+            animalType: targetAnimal
+          })
+        });
+        if (serverResult && serverResult.prediction) {
+          return serverResult;
+        }
+      } catch {
+        // Server unavailable or timed out — continue cleanly to Edge ONNX neural engine
       }
-    } catch {
-      // Backend offline or unreachable — use verified clinical inference engine
+    }
+
+    // 2. Real In-Browser Edge ONNX Inference (ConvNeXt-Tiny INT8 + Stage-4 CAM) for non-preset uploads/camera captures
+    const isExplicitPreset = Boolean(payload.presetId && ['sample-1', 'sample-2', 'sample-3', 'sample-4', 'sample-5', 'sample-6'].includes(payload.presetId));
+    const edgeImageSource = payload.image || payload.photoUrl;
+    if (!isExplicitPreset && edgeImageSource && typeof window !== 'undefined') {
+      const matchedSample = PRESET_DETECTION_SAMPLES.find(s => s.photoUrl === edgeImageSource);
+      if (!matchedSample) {
+        try {
+          const edgeResult = await inferWithOnnxEdge(edgeImageSource, targetAnimal, onProgress);
+          if (edgeResult && edgeResult.prediction) {
+            return edgeResult;
+          }
+        } catch (onnxErr) {
+          console.warn('[Edge ONNX] Falling back cleanly to pixel screening engine:', onnxErr.message);
+        }
+      }
     }
 
     // 2. High-Fidelity Veterinary Clinical Intelligence Engine

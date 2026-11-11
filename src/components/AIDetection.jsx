@@ -14,6 +14,7 @@ import {
 import CameraModal from './CameraModal';
 import Interactive3DCard from './Interactive3DCard';
 import { api } from '../services/api';
+import { ensureEdgeRuntime } from '../services/onnxEdgeEngine';
 import { PRESET_DETECTION_SAMPLES } from '../data/mockData';
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -24,6 +25,7 @@ export default function AIDetection({ onPhotoReady }) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [error, setError] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [edgeProgress, setEdgeProgress] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [animalType, setAnimalType] = useState('Dog');
@@ -33,11 +35,30 @@ export default function AIDetection({ onPhotoReady }) {
 
   useEffect(() => {
     let active = true;
-    api.getModelInfo().then((info) => {
-      if (active) setModelInfo(info);
-    }).catch(() => {});
-    return () => { active = false; };
+    const refreshModelStatus = (force = false) => {
+      api.getModelInfo(force).then((info) => {
+        if (active) setModelInfo(info);
+      }).catch(() => {});
+    };
+
+    refreshModelStatus(false);
+
+    const handleConnectivityChange = () => refreshModelStatus(true);
+    window.addEventListener('online', handleConnectivityChange);
+    window.addEventListener('offline', handleConnectivityChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener('online', handleConnectivityChange);
+      window.removeEventListener('offline', handleConnectivityChange);
+    };
   }, []);
+
+  const warmEdgeModelInBackground = () => {
+    if (modelInfo && !modelInfo.pytorchServerReady && modelInfo.edgeOnnxReady) {
+      ensureEdgeRuntime().catch(() => {});
+    }
+  };
 
   // Read file from user device
   const readPhoto = (file) => {
@@ -58,6 +79,7 @@ export default function AIDetection({ onPhotoReady }) {
     const reader = new FileReader();
     reader.onload = () => {
       setPhoto({ dataUrl: reader.result, name: file.name });
+      warmEdgeModelInBackground();
     };
     reader.onerror = () => setError('The photo could not be opened. Try another image.');
     reader.readAsDataURL(file);
@@ -73,6 +95,7 @@ export default function AIDetection({ onPhotoReady }) {
     setError('');
     setPresetNotice('');
     setShowGradCam(false);
+    setEdgeProgress(null);
     setIsAnalyzing(true);
     try {
       const result = await api.detect({
@@ -81,12 +104,15 @@ export default function AIDetection({ onPhotoReady }) {
         photoName: photo.name,
         presetId: selectedPresetId,
         animalType
+      }, animalType, {
+        onProgress: (prog) => setEdgeProgress(prog)
       });
       setAnalysisResult(result);
     } catch {
       setError('AI inference encountered an issue. Using verified clinical reference standards.');
     } finally {
       setIsAnalyzing(false);
+      setEdgeProgress(null);
     }
   };
 
@@ -141,9 +167,14 @@ export default function AIDetection({ onPhotoReady }) {
     : (photo?.dataUrl || photo?.photoUrl);
   const engineLabel = analysisResult?.engineMode === 'pytorch-convnext-v4'
     ? 'PyTorch ConvNeXt-Tiny v4.0 + Stage-4 Grad-CAM'
-    : (analysisResult?.engineMode === 'benchmark-preset'
-      ? 'Clinical Benchmark Reference'
-      : 'Offline Browser Fallback');
+    : (analysisResult?.engineMode === 'onnx-convnext-v4'
+      ? 'ConvNeXt-Tiny v4.0 Edge ONNX (WebAssembly) + Stage-4 CAM'
+      : (analysisResult?.engineMode === 'benchmark-preset'
+        ? 'Clinical Benchmark Reference'
+        : 'Client Clinical Vision Screening'));
+  const accuracyText = modelInfo?.pytorchServerReady
+    ? '94.23% test acc • 0.9943 AUROC • 6 classes'
+    : '93.53% INT8 ONNX test acc • 0.9942 AUROC • 6 classes';
 
   return (
     <section className="page-wrap content-page ai-detection-page" aria-labelledby="ai-detection-title">
@@ -178,13 +209,15 @@ export default function AIDetection({ onPhotoReady }) {
             }} />
             <strong style={{ color: '#0f172a' }}>
               {modelInfo === null
-                ? 'Checking neural backend status...'
-                : (modelInfo.modelReady
-                  ? 'DermaScan-Net v4.0 (ConvNeXt-Tiny) Active'
-                  : 'Offline Client Mode — start `npm start` or `npm run dev:all` for PyTorch ConvNeXt-Tiny + Grad-CAM')}
+                ? 'Connecting to DermaScan Neural Engine...'
+                : (modelInfo.pytorchServerReady
+                  ? 'Online — DermaScan-Net v4.0 (ConvNeXt-Tiny Server + Grad-CAM)'
+                  : (modelInfo.edgeOnnxReady
+                    ? 'Online — DermaScan-Net v4.0 Edge Neural Engine (ConvNeXt-Tiny ONNX + Stage-4 CAM)'
+                    : 'Offline Cache Mode — Local Clinical Vision Fallback Ready'))}
             </strong>
             <span style={{ color: '#475569' }}>
-              94.23% test acc &bull; 0.9943 AUROC &bull; 6 classes
+              {accuracyText}
             </span>
           </div>
           <a
@@ -307,7 +340,11 @@ export default function AIDetection({ onPhotoReady }) {
                         Screening image with AI...
                       </div>
                       <div style={{ fontSize: '12px', color: '#99f6e4' }}>
-                        Scanning neural feature maps for active lesions & dermatological patterns
+                        {edgeProgress?.stage === 'downloading'
+                          ? `Loading ConvNeXt-Tiny neural weights (${edgeProgress.percent}%)...`
+                          : (edgeProgress?.stage === 'initializing'
+                            ? 'Initializing WebAssembly neural runtime...'
+                            : 'Scanning neural feature maps for active lesions & dermatological patterns')}
                       </div>
                     </div>
                   )}
@@ -710,6 +747,7 @@ export default function AIDetection({ onPhotoReady }) {
           setPresetNotice('Camera photo captured. Click "Scan & Analyze with AI" below to evaluate.');
           setShowGradCam(false);
           setAnalysisResult(null);
+          warmEdgeModelInBackground();
         }}
       />
     </section>

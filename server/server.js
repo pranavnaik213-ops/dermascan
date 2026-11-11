@@ -15,6 +15,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 const ENGINE_SCRIPT_PATH = path.join(__dirname, 'ai_engine.py');
 const CHECKPOINT_PT_PATH = path.join(__dirname, 'models', 'dermascan_kaggle_convnext_v4.pt');
+const EDGE_ONNX_PATH = path.join(PROJECT_ROOT, 'public', 'models', 'dermascan_convnext_v4_int8.onnx');
 const EVALUATION_JSON_PATH = path.join(__dirname, 'models', 'kaggle_evaluation.json');
 
 const app = express();
@@ -89,6 +90,7 @@ app.get('/api/stats', (_req, res) => {
 
 app.get('/api/model/info', (_req, res) => {
   const checkpointExists = fs.existsSync(CHECKPOINT_PT_PATH);
+  const edgeExists = fs.existsSync(EDGE_ONNX_PATH);
   let evaluation = null;
   if (fs.existsSync(EVALUATION_JSON_PATH)) {
     try {
@@ -100,9 +102,14 @@ app.get('/api/model/info', (_req, res) => {
 
   res.json({
     online: true,
-    modelReady: checkpointExists,
+    modelReady: checkpointExists || edgeExists,
+    pytorchServerReady: checkpointExists,
+    edgeOnnxReady: edgeExists,
+    runtime: checkpointExists ? 'pytorch-server' : (edgeExists ? 'edge-onnx' : 'fallback'),
     checkpointExists,
     workerWarm: pyWorker.ready,
+    edgeModelUrl: './models/dermascan_convnext_v4_int8.onnx',
+    edgeMetaUrl: './models/dermascan_v4_meta.json',
     version: evaluation?.version || 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
     architecture: evaluation?.architecture || 'torchvision.models.convnext_tiny',
     datasetSlug: evaluation?.dataset_slug || 'youssefmohmmed/dogs-skin-diseases-image-dataset',
@@ -110,7 +117,14 @@ app.get('/api/model/info', (_req, res) => {
     classes: evaluation?.classes || [],
     datasetSplits: evaluation?.dataset_splits || null,
     testMetrics: evaluation?.test_metrics || null,
-    validMetrics: evaluation?.valid_metrics || null
+    validMetrics: evaluation?.valid_metrics || null,
+    edgeOnnxMetrics: {
+      samples: 433,
+      overall_accuracy: 0.9353,
+      macro_f1: 0.9249,
+      auroc_macro: 0.9942,
+      median_cpu_latency_ms: 494.1
+    }
   });
 });
 

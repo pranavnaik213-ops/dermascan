@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import fs from 'fs';
+import path from 'path';
 
 function copyToHomepagePlugin() {
   return {
@@ -8,6 +9,12 @@ function copyToHomepagePlugin() {
     closeBundle() {
       try {
         if (fs.existsSync('dist')) {
+          for (const dirName of ['assets', 'models', 'ort']) {
+            const target = path.join('homepage', dirName);
+            if (fs.existsSync(target)) {
+              fs.rmSync(target, { recursive: true, force: true });
+            }
+          }
           fs.cpSync('dist', 'homepage', { recursive: true });
         }
       } catch (err) {
@@ -20,6 +27,9 @@ function copyToHomepagePlugin() {
 export default defineConfig({
   base: './',
   plugins: [react(), copyToHomepagePlugin()],
+  optimizeDeps: {
+    exclude: ['onnxruntime-web']
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
