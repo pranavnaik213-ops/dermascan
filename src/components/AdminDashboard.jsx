@@ -22,6 +22,27 @@ import { caseStorage } from '../services/caseStorage';
 import { downloadCaseReportPDF } from '../services/pdfReportGenerator';
 
 const ADMIN_PASSWORD = '0987';
+const AUTH_KEY = 'dermascan_admin_auth_v3';
+
+function safeStorageGet(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch { /* ignore strict storage restrictions */ }
+}
+
+function safeStorageRemove(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch { /* ignore */ }
+}
 
 const STATUS_CONFIG = {
   received: { label: 'Received (New)', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
@@ -33,7 +54,7 @@ const STATUS_CONFIG = {
 export default function AdminDashboard({ setActiveTab }) {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('dermascan_admin_auth_v3') === 'true';
+    return safeStorageGet(AUTH_KEY) === 'true';
   });
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -84,6 +105,16 @@ export default function AdminDashboard({ setActiveTab }) {
     return () => { active = false; };
   }, [isAuthenticated]);
 
+  // Close inspection modal on Escape
+  useEffect(() => {
+    if (!inspectingReport) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setInspectingReport(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [inspectingReport]);
+
   // Handle Login with password 0987
   const handleLogin = (e) => {
     e.preventDefault();
@@ -93,7 +124,7 @@ export default function AdminDashboard({ setActiveTab }) {
     const passTrim = loginPassword.trim();
 
     if (passTrim === ADMIN_PASSWORD) {
-      localStorage.setItem('dermascan_admin_auth_v3', 'true');
+      safeStorageSet(AUTH_KEY, 'true');
       setIsAuthenticated(true);
       setIsLoggingIn(false);
     } else {
@@ -104,7 +135,7 @@ export default function AdminDashboard({ setActiveTab }) {
 
   // Handle Logout
   const handleLogout = () => {
-    localStorage.removeItem('dermascan_admin_auth_v3');
+    safeStorageRemove(AUTH_KEY);
     setIsAuthenticated(false);
   };
 
@@ -179,8 +210,8 @@ export default function AdminDashboard({ setActiveTab }) {
   // VIEW 1: ADMIN LOGIN GATE
   if (!isAuthenticated) {
     return (
-      <section className="page-wrap content-page" style={{ maxWidth: '500px', margin: '40px auto' }}>
-        <div className="panel" style={{ padding: '36px 32px', borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-3d-card)' }}>
+      <section className="page-wrap content-page admin-login-shell">
+        <div className="panel admin-login-card">
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <span style={{
               width: '54px',
@@ -308,8 +339,8 @@ export default function AdminDashboard({ setActiveTab }) {
         paddingBottom: '16px',
         borderBottom: '1px solid var(--border)'
       }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -408,7 +439,7 @@ export default function AdminDashboard({ setActiveTab }) {
       )}
 
       {/* Metrics Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '22px' }}>
+      <div className="admin-metrics-grid">
         <div className="panel" style={{ padding: '16px', borderRadius: '10px' }}>
           <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Reports</span>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '4px 0 2px' }}>{totalReportsCount}</div>
@@ -438,7 +469,7 @@ export default function AdminDashboard({ setActiveTab }) {
       <div className="panel" style={{ padding: '16px', borderRadius: '10px', marginBottom: '18px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           {/* Search Input */}
-          <div style={{ flex: '1 1 280px', position: 'relative' }}>
+          <div style={{ flex: '1 1 240px', minWidth: 0, position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
             <input
               type="text"
@@ -532,7 +563,7 @@ export default function AdminDashboard({ setActiveTab }) {
             </button>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrap">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -732,40 +763,24 @@ export default function AdminDashboard({ setActiveTab }) {
 
       {/* Detail Inspection Modal */}
       {inspectingReport && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.65)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 1000,
-          display: 'grid',
-          placeItems: 'center',
-          padding: '20px'
-        }}>
-          <div className="panel" style={{
-            maxWidth: '680px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            borderRadius: '14px',
-            padding: '24px',
-            position: 'relative'
-          }}>
+        <div
+          className="admin-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setInspectingReport(null); }}
+        >
+          <div className="panel admin-modal-panel" role="dialog" aria-modal="true" aria-label={`Report Reference ${inspectingReport.id}`}>
             <button
               type="button"
+              aria-label="Close case details"
               onClick={() => setInspectingReport(null)}
               style={{
                 position: 'absolute',
-                top: '18px',
-                right: '18px',
+                top: '14px',
+                right: '14px',
                 border: 'none',
                 background: '#f1f5f9',
                 borderRadius: '50%',
-                width: '32px',
-                height: '32px',
+                width: '40px',
+                height: '40px',
                 display: 'grid',
                 placeItems: 'center',
                 cursor: 'pointer',

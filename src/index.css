@@ -4,6 +4,12 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: clip;
+}
+
 html, body, #root {
   min-width: 320px;
   min-height: 100%;
@@ -11,6 +17,7 @@ html, body, #root {
 }
 
 body {
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

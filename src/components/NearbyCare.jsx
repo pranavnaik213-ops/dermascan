@@ -351,32 +351,33 @@ export default function NearbyCare({ report }) {
         </div>
 
         {/* Custom area search fallback */}
-        <form onSubmit={handleCustomSearch} style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+        <form onSubmit={handleCustomSearch} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
           <input
             type="text"
             value={customSearch}
             onChange={(e) => setCustomSearch(e.target.value)}
             placeholder="Or search any custom neighborhood or city…"
             style={{
-              flex: 1,
-              minHeight: '40px',
+              flex: '1 1 200px',
+              minWidth: 0,
+              minHeight: '42px',
               padding: '8px 12px',
               borderRadius: '8px',
               border: '1px solid var(--border)',
               background: '#fff',
-              fontSize: '13px'
+              fontSize: '13.5px'
             }}
           />
           <button
             type="submit"
             className="button button-secondary"
-            style={{ minHeight: '40px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ minHeight: '42px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             <Search size={15} aria-hidden="true" /> Search
           </button>
         </form>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '12px', color: '#64748b' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '12px', fontSize: '12px', color: '#64748b' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <MapPin size={13} color="var(--brand)" /> Active Area: <strong style={{ color: '#0f172a' }}>{selectedLocalityName}</strong>
           </span>
@@ -407,12 +408,14 @@ export default function NearbyCare({ report }) {
         {/* Google Map Viewer */}
         <div className="panel" style={{ padding: 0, overflow: 'hidden', borderRadius: '12px', border: '1px solid var(--border)' }}>
           <div style={{
-            padding: '12px 18px',
+            padding: '12px 16px',
             background: '#fafafa',
             borderBottom: '1px solid var(--border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
             fontSize: '12.5px',
             color: '#475569'
           }}>
@@ -429,7 +432,7 @@ export default function NearbyCare({ report }) {
             </a>
           </div>
 
-          <div style={{ height: '420px', width: '100%', background: '#e2e8f0' }}>
+          <div className="nearby-gmap-frame">
             <iframe
               key={`${mapSearchQuery}`}
               title="Google Maps Care Center Finder"
@@ -465,19 +468,15 @@ export default function NearbyCare({ report }) {
               return (
                 <article
                   key={cat.id}
-                  className="panel"
+                  className="panel nearby-service-card"
                   style={{
                     padding: '18px',
                     borderRadius: '10px',
                     border: isSelected ? '1px solid var(--brand)' : '1px solid var(--border)',
-                    background: isSelected ? '#f8fafc' : '#ffffff',
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    alignItems: 'center',
-                    gap: '16px'
+                    background: isSelected ? '#f8fafc' : '#ffffff'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', minWidth: 0 }}>
                     <div style={{
                       width: '38px',
                       height: '38px',
@@ -491,7 +490,7 @@ export default function NearbyCare({ report }) {
                       <IconComponent size={18} />
                     </div>
 
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <h3 style={{ margin: '0 0 3px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
                         {cat.title}
                       </h3>
@@ -501,7 +500,7 @@ export default function NearbyCare({ report }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end' }}>
+                  <div className="nearby-service-actions">
                     <a
                       href={driveUrl}
                       target="_blank"

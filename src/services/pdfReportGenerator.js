@@ -4,6 +4,7 @@
  */
 
 import { jsPDF } from 'jspdf';
+import { triggerBlobDownload } from '../utils/blobDownload.js';
 
 /**
  * Helper to safely format dates
@@ -26,7 +27,8 @@ function formatDate(dateVal) {
 }
 
 /**
- * Load an image from a URL or data URL and return image dimensions and base64
+ * Load an image from a URL or data URL and normalize it via canvas to a bounded JPEG data URL
+ * so mobile camera formats (WebP/HEIC/PNG/large 12MP shots) embed reliably across all devices.
  */
 function loadImageData(url) {
   return new Promise((resolve) => {
@@ -37,12 +39,34 @@ function loadImageData(url) {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => {
-      resolve({
-        element: img,
-        width: img.naturalWidth || img.width,
-        height: img.naturalHeight || img.height,
-        dataUrl: url
-      });
+      const natW = img.naturalWidth || img.width || 800;
+      const natH = img.naturalHeight || img.height || 600;
+      try {
+        const maxDim = 1200;
+        const scale = Math.min(1, maxDim / Math.max(natW, natH));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(natW * scale));
+        canvas.height = Math.max(1, Math.round(natH * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve({
+          element: img,
+          width: canvas.width,
+          height: canvas.height,
+          dataUrl: canvas.toDataURL('image/jpeg', 0.86),
+          format: 'JPEG'
+        });
+      } catch {
+        resolve({
+          element: img,
+          width: natW,
+          height: natH,
+          dataUrl: url,
+          format: url.startsWith('data:image/png') ? 'PNG' : 'JPEG'
+        });
+      }
     };
     img.onerror = () => {
       console.warn('[PDF] Could not load image for embedding:', url);
@@ -230,7 +254,7 @@ export async function downloadCaseReportPDF(report) {
         doc.setFontSize(11);
         doc.text('Photographic Evidence Attached', margin + 6, currentY + 7);
 
-        const format = report.photoUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        const format = imgInfo.format || (report.photoUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG');
         doc.addImage(imgInfo.dataUrl, format, renderX, currentY + 10, renderW, renderH);
 
         currentY += renderH + 20;
@@ -272,10 +296,15 @@ export async function downloadCaseReportPDF(report) {
     footerY + 4
   );
 
-  // Trigger browser download
+  // Trigger cross-device PDF download (works on desktop, Android, iOS Safari, and embedded WebViews)
   const safeId = (report.id || 'report').replace(/[^a-zA-Z0-9_-]/g, '_');
   const filename = `DermaScan-Report-${safeId}.pdf`;
-  doc.save(filename);
+  try {
+    const blob = doc.output('blob');
+    triggerBlobDownload(blob, filename);
+  } catch {
+    doc.save(filename);
+  }
   return true;
 }
 

@@ -31,7 +31,7 @@ export default function App() {
     const targetTab = VALID_TABS.includes(newTab) ? newTab : 'home';
 
     // Immediately reset scroll to top so user never lands at the bottom
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     const mainEl = document.getElementById('main-content');
@@ -63,7 +63,7 @@ export default function App() {
       setActiveTab(valid);
 
       // Scroll to top on back navigation as well
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
@@ -86,7 +86,7 @@ export default function App() {
 
   // Guarantee scroll to top on every activeTab state change
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     const mainEl = document.getElementById('main-content');

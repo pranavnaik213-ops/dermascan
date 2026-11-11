@@ -25,8 +25,14 @@ export default function Interactive3DCard({
   });
   const [isHovered, setIsHovered] = useState(false);
 
+  const canTilt = () => (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches &&
+    !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  );
+
   const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !canTilt()) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -53,6 +59,7 @@ export default function Interactive3DCard({
   };
 
   const handleMouseEnter = () => {
+    if (!canTilt()) return;
     setIsHovered(true);
   };
 

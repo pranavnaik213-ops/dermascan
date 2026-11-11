@@ -22,7 +22,9 @@ export default defineConfig({
   plugins: [react(), copyToHomepagePlugin()],
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    target: 'es2020',
+    cssTarget: ['chrome103', 'edge103', 'firefox103', 'safari14']
   },
   server: {
     host: true,

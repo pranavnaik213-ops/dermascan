@@ -5,11 +5,22 @@
  * Guarantees that user reports and high-resolution photos never get lost.
  */
 
+import { triggerBlobDownload } from '../utils/blobDownload.js';
+
 const DB_NAME = 'dermascan_permanent_storage_v1';
 const STORE_NAME = 'animal_reports';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const LOCAL_STORAGE_KEY = 'dermascan_clinical_cases_v3';
 const PURGE_FLAG_KEY = 'dermascan_purged_mock_0987_v1';
+
+function ensureObjectStore(db) {
+  if (!db.objectStoreNames.contains(STORE_NAME)) {
+    const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+    store.createIndex('observedAt', 'observedAt', { unique: false });
+    store.createIndex('status', 'status', { unique: false });
+    store.createIndex('animalType', 'animalType', { unique: false });
+  }
+}
 
 // One-time automatic cleanup to wipe legacy mock/test cases from all storage layers
 function purgeLegacyMockData() {
@@ -26,11 +37,22 @@ function purgeLegacyMockData() {
 
       if (window.indexedDB) {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (event) => {
+          ensureObjectStore(event.target.result);
+        };
         req.onsuccess = () => {
           const db = req.result;
-          if (db.objectStoreNames.contains(STORE_NAME)) {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            tx.objectStore(STORE_NAME).clear();
+          try {
+            if (db.objectStoreNames.contains(STORE_NAME)) {
+              const tx = db.transaction(STORE_NAME, 'readwrite');
+              tx.objectStore(STORE_NAME).clear();
+              tx.oncomplete = () => db.close();
+              tx.onerror = () => db.close();
+            } else {
+              db.close();
+            }
+          } catch {
+            db.close();
           }
         };
       }
@@ -50,23 +72,22 @@ function openDatabase() {
       return;
     }
 
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    try {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        store.createIndex('observedAt', 'observedAt', { unique: false });
-        store.createIndex('status', 'status', { unique: false });
-        store.createIndex('animalType', 'animalType', { unique: false });
-      }
-    };
+      request.onupgradeneeded = (event) => {
+        ensureObjectStore(event.target.result);
+      };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => {
-      console.warn('[CaseStorage] IndexedDB open error, falling back to localStorage:', request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => {
+        console.warn('[CaseStorage] IndexedDB open error, falling back to localStorage:', request.error);
+        resolve(null);
+      };
+    } catch (err) {
+      console.warn('[CaseStorage] IndexedDB unavailable, falling back to localStorage:', err);
       resolve(null);
-    };
+    }
   });
 }
 
@@ -362,14 +383,7 @@ export const caseStorage = {
 
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `dermascan_reports_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    triggerBlobDownload(blob, `dermascan_reports_export_${new Date().toISOString().slice(0, 10)}.csv`);
   },
 
   /**
@@ -378,13 +392,6 @@ export const caseStorage = {
   exportToJSON(reports) {
     const dataStr = JSON.stringify(reports, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `dermascan_database_backup_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    triggerBlobDownload(blob, `dermascan_database_backup_${new Date().toISOString().slice(0, 10)}.json`);
   }
 };

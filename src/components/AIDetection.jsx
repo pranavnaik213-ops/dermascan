@@ -132,7 +132,7 @@ export default function AIDetection({ onPhotoReady }) {
       </header>
 
       {/* Main Scanner Workspace */}
-      <div className="photo-review-layout" style={{ gridTemplateColumns: analysisResult ? 'minmax(0, 1.1fr) minmax(320px, 1.2fr)' : undefined }}>
+      <div className={`photo-review-layout${analysisResult ? ' has-result' : ''}`}>
         {/* Left Column: Image Canvas & Controls */}
         <div className="panel photo-review-panel" style={{ display: 'flex', flexDirection: 'column' }}>
           {photo ? (
@@ -241,9 +241,9 @@ export default function AIDetection({ onPhotoReady }) {
               </div>
 
               {/* Photo metadata strip under the image */}
-              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ImagePlus size={14} /> {photo.name || 'Selected photo'}
+              <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: 'var(--muted)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflowWrap: 'anywhere' }}>
+                  <ImagePlus size={14} style={{ flexShrink: 0 }} /> {photo.name || 'Selected photo'}
                 </span>
                 {analysisResult?.qualityCheck && (
                   <span style={{ color: analysisResult.qualityCheck.passed ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
@@ -344,8 +344,8 @@ export default function AIDetection({ onPhotoReady }) {
               background: isHealthyResult ? '#f0fdf4' : '#fef2f2',
               border: `1px solid ${isHealthyResult ? '#bbf7d0' : '#fecaca'}`
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ minWidth: 0, flex: '1 1 200px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                     <span style={{
                       fontSize: '11px',
@@ -404,7 +404,7 @@ export default function AIDetection({ onPhotoReady }) {
 
             {/* Differential Diagnosis: Multi-Class Probability Distribution */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 750, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Differential Diagnosis (6 Clinical Classes)
                 </span>
@@ -553,7 +553,7 @@ export default function AIDetection({ onPhotoReady }) {
                       boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                     }}
                   />
-                  <div style={{ overflow: 'hidden' }}>
+                  <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
                     <div style={{
                       fontSize: '12px',
                       fontWeight: 750,

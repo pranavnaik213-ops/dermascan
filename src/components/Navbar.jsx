@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { HeartHandshake, MapPin, Menu, X } from 'lucide-react';
 
 const navItems = [
@@ -11,6 +11,25 @@ const navItems = [
 
 export default function Navbar({ activeTab, setActiveTab }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    const handleOutside = (e) => {
+      if (headerRef.current && !headerRef.current.contains(e.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('pointerdown', handleOutside);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('pointerdown', handleOutside);
+    };
+  }, [mobileMenuOpen]);
 
   const navigate = (id) => {
     setActiveTab(id);
@@ -18,7 +37,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
   };
 
   return (
-    <header className="site-header">
+    <header className="site-header" ref={headerRef}>
       <nav className="site-nav page-wrap" aria-label="Main navigation">
         <button className="site-brand" type="button" onClick={() => navigate('home')} aria-label="DermaScan home">
           <span className="site-brand-mark"><HeartHandshake size={20} aria-hidden="true" /></span>

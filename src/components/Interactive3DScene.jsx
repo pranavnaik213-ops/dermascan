@@ -12,7 +12,10 @@ export default function Interactive3DScene() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     let animationFrameId;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const isFinePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches ?? true;
 
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
@@ -33,10 +36,12 @@ export default function Interactive3DScene() {
     };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('mousemove', handleMouseMove);
+    if (isFinePointer) {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    }
 
-    // 3D Particles
-    const particleCount = 70;
+    // 3D Particles (lighter count on mobile viewports for smooth battery-friendly rendering)
+    const particleCount = width < 768 ? 28 : 70;
     const particles = [];
     for (let i = 0; i < particleCount; i++) {
       particles.push({
@@ -168,27 +173,31 @@ export default function Interactive3DScene() {
         ctx.globalAlpha = 1.0;
       }
 
-      animationFrameId = requestAnimationFrame(render);
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
 
     render();
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', handleMouseMove);
-      cancelAnimationFrame(animationFrameId);
+      if (isFinePointer) {
+        window.removeEventListener('mousemove', handleMouseMove);
+      }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
+        inset: 0,
+        width: '100%',
+        height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
         opacity: 0.85
