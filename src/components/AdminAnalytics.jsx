@@ -1505,19 +1505,19 @@ export default function AdminAnalytics({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', fontSize: '0.8rem' }}>
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>Backbone:</span>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>EfficientNet-B2 NoisyStudent</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>ConvNeXt-Tiny (LP-FT)</div>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Quantization:</span>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>ONNX Runtime FP16 / INT8</div>
+                <span style={{ color: 'var(--text-muted)' }}>Calibration &amp; Inference:</span>
+                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>PyTorch 2.15 (2x TTA, Temp T=0.800)</div>
               </div>
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>Explainability:</span>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>Grad-CAM Layer4 Feature Maps</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>Grad-CAM Stage-4 Feature Maps</div>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)' }}>Ground-Truth Cohort:</span>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>4,280 Verified Canine Lesions</div>
+                <span style={{ color: 'var(--text-muted)' }}>Training Dataset:</span>
+                <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>4,315 Canine Images (Kaggle)</div>
               </div>
             </div>
           </div>

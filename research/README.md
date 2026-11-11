@@ -73,3 +73,20 @@ Trained artifacts are exported to:
 - `training-output/dermascan_net_v3_production.pt`
 - `training-output/evaluation.json`
 - `server/models/dermascan_net_v3_production.pt`
+
+---
+
+## 5. DermaScan-Net v4.0 (Kaggle Dogs Skin Diseases Image Dataset)
+
+Trained cleanly on `youssefmohmmed/dogs-skin-diseases-image-dataset` (`4,315` images; `2,992` deduplicated train after removing `30` train duplicates matching `valid`/`test`, `860` valid, `433` held-out test) via Two-Stage LP-FT on `torchvision.models.convnext_tiny`:
+
+```powershell
+# Install dependencies including kagglehub
+uv pip install --python .venv-ml\Scripts\python.exe kagglehub
+
+# Download Kaggle dataset and train + calibrate + evaluate ConvNeXt-Tiny v4
+.venv-ml\Scripts\python.exe research\train_kaggle_dog_skin_model.py
+```
+
+- **Held-out Test (`n = 433`, 2x TTA, Temperature `T = 0.8004`)**: **94.23% Accuracy** (`95% CI [91.62%, 96.06%]`), **0.9333 Macro F1**, **0.9943 Macro OvR AUROC**, **0.9284 Cohen's Kappa**, **0.0206 ECE**, **73.08 ms** single-image CPU forward latency.
+- **Production Deployment**: `server/ai_engine.py` loads `server/models/dermascan_kaggle_convnext_v4.pt` directly for 2x TTA classification + Stage-4 Grad-CAM lesion ROI & overlay generation.

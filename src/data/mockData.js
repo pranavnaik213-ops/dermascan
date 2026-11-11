@@ -458,31 +458,31 @@ export const PRESET_DETECTION_SAMPLES = [
 ];
 
 export const AI_MODEL_METRICS = {
-  version: "DermaScan-Net v3.0 (EfficientNetV2-S Deep Transfer / PyTorch 2.15)",
-  lastUpdated: "2026-11-09",
-  datasetCount: 3371,
-  datasetSource: "Mendeley Data (Hwang et al. 2022, DOI 10.17632/5dbht54kw7.1) & Howl Vision Multi-Center Canine Benchmark",
-  accuracy: 94.0,
-  precision: 92.5,
-  recall: 92.1,
-  f1Score: 92.3,
-  auroc: 0.984,
-  inferenceLatencyMs: 142,
+  version: "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT / PyTorch 2.15)",
+  lastUpdated: "2026-11-11",
+  datasetCount: 4315,
+  datasetSource: "Kaggle Dogs Skin Diseases Image Dataset (youssefmohmmed/dogs-skin-diseases-image-dataset) — 4,315 images (2,992 deduplicated train, 860 valid, 433 held-out test)",
+  accuracy: 94.23,
+  precision: 93.86,
+  recall: 92.84,
+  f1Score: 93.33,
+  auroc: 0.9943,
+  inferenceLatencyMs: 73,
   conditionBreakdown: [
-    { name: "Canine Demodectic & Sarcoptic Mange", f1: 99.1, sensitivity: 99.0, specificity: 99.5 },
-    { name: "Bacterial Dermatitis & Deep Pyoderma", f1: 90.2, sensitivity: 90.9, specificity: 98.2 },
-    { name: "Fungal & Malassezia Dermatitis", f1: 87.3, sensitivity: 88.9, specificity: 97.8 },
-    { name: "Healthy Canine Epidermis Control", f1: 94.1, sensitivity: 92.8, specificity: 99.1 },
-    { name: "Atopic & Allergic Dermatitis", f1: 86.2, sensitivity: 86.2, specificity: 98.4 },
-    { name: "Microsporum Ringworm (Dermatophytosis)", f1: 96.9, sensitivity: 96.5, specificity: 99.2 }
+    { name: "Canine Demodectic & Sarcoptic Mange", f1: 98.0, sensitivity: 99.0, specificity: 99.1 },
+    { name: "Bacterial Dermatitis & Deep Pyoderma", f1: 94.7, sensitivity: 93.9, specificity: 99.2 },
+    { name: "Fungal & Malassezia Dermatitis", f1: 86.0, sensitivity: 85.2, specificity: 98.2 },
+    { name: "Healthy Canine Epidermis Control", f1: 92.8, sensitivity: 92.8, specificity: 98.6 },
+    { name: "Atopic & Allergic Dermatitis", f1: 92.9, sensitivity: 89.7, specificity: 99.8 },
+    { name: "Microsporum Ringworm (Dermatophytosis)", f1: 95.7, sensitivity: 96.5, specificity: 98.1 }
   ],
   confusionMatrix: [
-    { class: "Demodectic / Sarcoptic Mange", predictedMange: 173, predictedDermatitis: 0, predictedFungal: 0, predictedHealthy: 0, predictedAllergic: 1, predictedRingworm: 0 },
-    { class: "Bacterial Dermatitis & Pyoderma", predictedMange: 1, predictedDermatitis: 159, predictedFungal: 5, predictedHealthy: 1, predictedAllergic: 1, predictedRingworm: 8 },
-    { class: "Fungal & Malassezia Infections", predictedMange: 0, predictedDermatitis: 4, predictedFungal: 80, predictedHealthy: 7, predictedAllergic: 3, predictedRingworm: 3 },
-    { class: "Healthy Epidermis Controls", predictedMange: 1, predictedDermatitis: 0, predictedFungal: 5, predictedHealthy: 132, predictedAllergic: 1, predictedRingworm: 0 },
-    { class: "Atopic & Allergic Dermatitis", predictedMange: 0, predictedDermatitis: 2, predictedFungal: 4, predictedHealthy: 0, predictedAllergic: 56, predictedRingworm: 1 },
-    { class: "Microsporum Ringworm", predictedMange: 0, predictedDermatitis: 8, predictedFungal: 0, predictedHealthy: 0, predictedAllergic: 0, predictedRingworm: 204 }
+    { class: "Demodectic / Sarcoptic Mange", predictedMange: 99, predictedDermatitis: 0, predictedFungal: 0, predictedHealthy: 0, predictedAllergic: 0, predictedRingworm: 1 },
+    { class: "Bacterial Dermatitis & Pyoderma", predictedMange: 0, predictedDermatitis: 62, predictedFungal: 1, predictedHealthy: 0, predictedAllergic: 0, predictedRingworm: 3 },
+    { class: "Fungal & Malassezia Infections", predictedMange: 2, predictedDermatitis: 0, predictedFungal: 46, predictedHealthy: 4, predictedAllergic: 1, predictedRingworm: 1 },
+    { class: "Healthy Epidermis Controls", predictedMange: 0, predictedDermatitis: 0, predictedFungal: 4, predictedHealthy: 64, predictedAllergic: 0, predictedRingworm: 1 },
+    { class: "Atopic & Allergic Dermatitis", predictedMange: 0, predictedDermatitis: 1, predictedFungal: 1, predictedHealthy: 1, predictedAllergic: 26, predictedRingworm: 0 },
+    { class: "Microsporum Ringworm", predictedMange: 1, predictedDermatitis: 2, predictedFungal: 1, predictedHealthy: 0, predictedAllergic: 0, predictedRingworm: 111 }
   ],
   diseaseDistribution: [
     { name: "Demodectic & Sarcoptic Mange", count: 1250, percentage: 37 },

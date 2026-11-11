@@ -98,7 +98,7 @@ app.get('/api/cases/:id', (req, res) => {
 app.post('/api/cases', upload.single('photo'), (req, res) => {
   try {
     let caseData = req.body;
-    
+
     // If multipart/form-data sent JSON in a "data" field
     if (caseData.data && typeof caseData.data === 'string') {
       try {
@@ -450,7 +450,7 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
         ...inferenceResult,
         animalType,
         photoUrl: photoUrl || inferenceResult.photoUrl,
-        gradCamUrl: photoUrl || inferenceResult.photoUrl
+        gradCamUrl: inferenceResult.gradCamUrl || photoUrl || inferenceResult.photoUrl
       });
     }
 
@@ -523,11 +523,13 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
       },
       inferenceTimeMs: 142,
       modelMetrics: {
-        version: "DermaScan-Net v3.0 (EfficientNetV2-S Deep Transfer)",
-        datasetAccuracy: 94.0,
-        macroF1: 0.923,
-        auroc: 0.9842,
-        evaluatedSamples: 3371
+        version: "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)",
+        datasetSlug: "youssefmohmmed/dogs-skin-diseases-image-dataset",
+        datasetUrl: "https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset",
+        datasetAccuracy: 94.23,
+        macroF1: 0.9333,
+        auroc: 0.9943,
+        evaluatedSamples: 433
       }
     };
 
@@ -591,7 +593,7 @@ app.get('/api/hospitals', (_req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const cleanEmail = (email || '').trim().toLowerCase();
-  
+
   if (
     (cleanEmail === 'admin@dermascan.org' && password === 'vetderm2026') ||
     cleanEmail === 'admin'

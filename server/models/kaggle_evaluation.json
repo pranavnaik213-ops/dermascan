@@ -1,0 +1,450 @@
+{
+  "version": "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)",
+  "architecture": "torchvision.models.convnext_tiny",
+  "pretrained_init": "ConvNeXt_Tiny_Weights.IMAGENET1K_V1",
+  "input_size": 224,
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "tta": "2x (original + horizontal_flip)",
+  "dataset_slug": "youssefmohmmed/dogs-skin-diseases-image-dataset",
+  "dataset_url": "https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset",
+  "dataset_splits": {
+    "train_count": 2992,
+    "removed_train_duplicates_matching_valid_or_test": 30,
+    "valid_count": 860,
+    "test_count": 433,
+    "valid_test_md5_overlap_count": 2,
+    "test_strict_no_valid_overlap_count": 431,
+    "train_class_counts": {
+      "Dermatitis": 545,
+      "Fungal_infections": 361,
+      "Healthy": 492,
+      "Hypersensitivity_Allergic_Dermatitis": 215,
+      "demodicosis": 588,
+      "ringworm": 791
+    },
+    "valid_class_counts": {
+      "Dermatitis": 175,
+      "Fungal_infections": 97,
+      "Healthy": 139,
+      "Hypersensitivity_Allergic_Dermatitis": 63,
+      "demodicosis": 174,
+      "ringworm": 212
+    },
+    "test_class_counts": {
+      "Dermatitis": 66,
+      "Fungal_infections": 54,
+      "Healthy": 69,
+      "Hypersensitivity_Allergic_Dermatitis": 29,
+      "demodicosis": 100,
+      "ringworm": 115
+    }
+  },
+  "classes": [
+    "Dermatitis",
+    "Fungal_infections",
+    "Healthy",
+    "Hypersensitivity_Allergic_Dermatitis",
+    "demodicosis",
+    "ringworm"
+  ],
+  "best_valid_macro_f1": 0.9426,
+  "best_valid_accuracy": 0.9488,
+  "valid_metrics": {
+    "samples": 860,
+    "temperature": 0.8004,
+    "overall_accuracy": 0.943,
+    "wilson_ci_95": [
+      0.9255,
+      0.9566
+    ],
+    "balanced_accuracy": 0.9388,
+    "macro_f1": 0.9368,
+    "macro_precision": 0.9354,
+    "macro_recall": 0.9388,
+    "macro_specificity": 0.9885,
+    "cohen_kappa": 0.9299,
+    "auroc_macro": 0.9906,
+    "brier_score": 0.0913,
+    "ece": 0.0124,
+    "per_class": {
+      "Dermatitis": {
+        "precision": 0.9405,
+        "recall": 0.9029,
+        "specificity": 0.9854,
+        "f1_score": 0.9213,
+        "support": 175
+      },
+      "Fungal_infections": {
+        "precision": 0.883,
+        "recall": 0.8557,
+        "specificity": 0.9856,
+        "f1_score": 0.8691,
+        "support": 97
+      },
+      "Healthy": {
+        "precision": 0.9496,
+        "recall": 0.9496,
+        "specificity": 0.9903,
+        "f1_score": 0.9496,
+        "support": 139
+      },
+      "Hypersensitivity_Allergic_Dermatitis": {
+        "precision": 0.9104,
+        "recall": 0.9683,
+        "specificity": 0.9925,
+        "f1_score": 0.9385,
+        "support": 63
+      },
+      "demodicosis": {
+        "precision": 0.9886,
+        "recall": 0.9943,
+        "specificity": 0.9971,
+        "f1_score": 0.9914,
+        "support": 174
+      },
+      "ringworm": {
+        "precision": 0.9401,
+        "recall": 0.9623,
+        "specificity": 0.9799,
+        "f1_score": 0.951,
+        "support": 212
+      }
+    },
+    "confusion_matrix": [
+      [
+        158,
+        4,
+        1,
+        1,
+        1,
+        10
+      ],
+      [
+        2,
+        83,
+        6,
+        3,
+        1,
+        2
+      ],
+      [
+        0,
+        6,
+        132,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        61,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        173,
+        1
+      ],
+      [
+        7,
+        0,
+        0,
+        1,
+        0,
+        204
+      ]
+    ],
+    "inference_latency_ms": null
+  },
+  "test_metrics": {
+    "samples": 433,
+    "temperature": 0.8004,
+    "overall_accuracy": 0.9423,
+    "wilson_ci_95": [
+      0.9162,
+      0.9606
+    ],
+    "balanced_accuracy": 0.9284,
+    "macro_f1": 0.9333,
+    "macro_precision": 0.9386,
+    "macro_recall": 0.9284,
+    "macro_specificity": 0.9882,
+    "cohen_kappa": 0.9284,
+    "auroc_macro": 0.9943,
+    "brier_score": 0.0896,
+    "ece": 0.0206,
+    "per_class": {
+      "Dermatitis": {
+        "precision": 0.9538,
+        "recall": 0.9394,
+        "specificity": 0.9918,
+        "f1_score": 0.9466,
+        "support": 66
+      },
+      "Fungal_infections": {
+        "precision": 0.8679,
+        "recall": 0.8519,
+        "specificity": 0.9815,
+        "f1_score": 0.8598,
+        "support": 54
+      },
+      "Healthy": {
+        "precision": 0.9275,
+        "recall": 0.9275,
+        "specificity": 0.9863,
+        "f1_score": 0.9275,
+        "support": 69
+      },
+      "Hypersensitivity_Allergic_Dermatitis": {
+        "precision": 0.963,
+        "recall": 0.8966,
+        "specificity": 0.9975,
+        "f1_score": 0.9286,
+        "support": 29
+      },
+      "demodicosis": {
+        "precision": 0.9706,
+        "recall": 0.99,
+        "specificity": 0.991,
+        "f1_score": 0.9802,
+        "support": 100
+      },
+      "ringworm": {
+        "precision": 0.9487,
+        "recall": 0.9652,
+        "specificity": 0.9811,
+        "f1_score": 0.9569,
+        "support": 115
+      }
+    },
+    "confusion_matrix": [
+      [
+        62,
+        1,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        0,
+        46,
+        4,
+        1,
+        2,
+        1
+      ],
+      [
+        0,
+        4,
+        64,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        26,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        99,
+        1
+      ],
+      [
+        2,
+        1,
+        0,
+        0,
+        1,
+        111
+      ]
+    ],
+    "inference_latency_ms": 73.08
+  },
+  "test_strict_no_valid_overlap_metrics": {
+    "samples": 431,
+    "temperature": 0.8004,
+    "overall_accuracy": 0.942,
+    "wilson_ci_95": [
+      0.9158,
+      0.9604
+    ],
+    "balanced_accuracy": 0.9273,
+    "macro_f1": 0.9324,
+    "macro_precision": 0.9379,
+    "macro_recall": 0.9273,
+    "macro_specificity": 0.9882,
+    "cohen_kappa": 0.928,
+    "auroc_macro": 0.9943,
+    "brier_score": 0.09,
+    "ece": 0.0205,
+    "per_class": {
+      "Dermatitis": {
+        "precision": 0.9538,
+        "recall": 0.9394,
+        "specificity": 0.9918,
+        "f1_score": 0.9466,
+        "support": 66
+      },
+      "Fungal_infections": {
+        "precision": 0.8654,
+        "recall": 0.8491,
+        "specificity": 0.9815,
+        "f1_score": 0.8571,
+        "support": 53
+      },
+      "Healthy": {
+        "precision": 0.9275,
+        "recall": 0.9275,
+        "specificity": 0.9862,
+        "f1_score": 0.9275,
+        "support": 69
+      },
+      "Hypersensitivity_Allergic_Dermatitis": {
+        "precision": 0.9615,
+        "recall": 0.8929,
+        "specificity": 0.9975,
+        "f1_score": 0.9259,
+        "support": 28
+      },
+      "demodicosis": {
+        "precision": 0.9706,
+        "recall": 0.99,
+        "specificity": 0.9909,
+        "f1_score": 0.9802,
+        "support": 100
+      },
+      "ringworm": {
+        "precision": 0.9487,
+        "recall": 0.9652,
+        "specificity": 0.981,
+        "f1_score": 0.9569,
+        "support": 115
+      }
+    },
+    "confusion_matrix": [
+      [
+        62,
+        1,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        0,
+        45,
+        4,
+        1,
+        2,
+        1
+      ],
+      [
+        0,
+        4,
+        64,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        25,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        99,
+        1
+      ],
+      [
+        2,
+        1,
+        0,
+        0,
+        1,
+        111
+      ]
+    ],
+    "inference_latency_ms": null
+  },
+  "training_history": [
+    {
+      "stage": "stage1_lp_warmup",
+      "epoch": 0,
+      "valid_acc": 0.9384,
+      "valid_macro_f1": 0.9316
+    },
+    {
+      "stage": "stage2_ft",
+      "epoch": 1,
+      "train_loss": 0.5597,
+      "valid_acc": 0.9244,
+      "valid_macro_f1": 0.9105,
+      "duration_sec": 315.5,
+      "best_so_far": false
+    },
+    {
+      "stage": "stage2_ft",
+      "epoch": 2,
+      "train_loss": 0.4741,
+      "valid_acc": 0.9384,
+      "valid_macro_f1": 0.9318,
+      "duration_sec": 337.3,
+      "best_so_far": true
+    },
+    {
+      "stage": "stage2_ft",
+      "epoch": 3,
+      "train_loss": 0.4233,
+      "valid_acc": 0.9465,
+      "valid_macro_f1": 0.9401,
+      "duration_sec": 341.5,
+      "best_so_far": true
+    },
+    {
+      "stage": "stage2_ft",
+      "epoch": 4,
+      "train_loss": 0.3998,
+      "valid_acc": 0.9488,
+      "valid_macro_f1": 0.9426,
+      "duration_sec": 375.5,
+      "best_so_far": true
+    }
+  ],
+  "seed": 42,
+  "epochs_stage2": 4,
+  "total_training_duration_sec": 1790.5,
+  "trained_at_iso": "2026-11-11T15:20:08Z"
+}
