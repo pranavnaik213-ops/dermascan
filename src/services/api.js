@@ -41,6 +41,28 @@ export const api = {
     }
   },
 
+  async getModelInfo() {
+    try {
+      return await request('/model/info');
+    } catch {
+      return {
+        online: false,
+        modelReady: false,
+        workerWarm: false,
+        version: 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
+        architecture: 'torchvision.models.convnext_tiny',
+        datasetSlug: 'youssefmohmmed/dogs-skin-diseases-image-dataset',
+        datasetUrl: 'https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset',
+        testMetrics: {
+          overall_accuracy: 0.9423,
+          macro_f1: 0.9333,
+          auroc_macro: 0.9943,
+          samples: 433
+        }
+      };
+    }
+  },
+
   async getStats() {
     try {
       return await request('/stats');
@@ -194,7 +216,7 @@ export const api = {
     }
   },
 
-  // --- AI DETECTION / QUALITY GATE (DermaScan-Net v3.0) ---
+  // --- AI DETECTION / QUALITY GATE (DermaScan-Net v4.0 ConvNeXt-Tiny) ---
   async detect(payloadOrUrl, animalType = 'Dog') {
     const payload = typeof payloadOrUrl === 'object' && payloadOrUrl !== null
       ? payloadOrUrl
@@ -681,7 +703,17 @@ export const api = {
       allProbabilities,
       qualityCheck: canvasQuality || { passed: true, brightness: 92, sharpness: 90, visibility: 94, message: "Optimal Image Quality Verified (ISO Balanced, Clear Focus)" },
       roiBox: isHealthy ? null : (computedRoiBox || payload.roiBox || { top: '24%', left: '26%', width: '48%', height: '48%' }),
-      inferenceTimeMs: 142
+      inferenceTimeMs: 142,
+      engineMode: (payload.presetId && PRESET_MAP[payload.presetId]) ? 'benchmark-preset' : 'client-heuristic-fallback',
+      modelMetrics: {
+        version: 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
+        datasetSlug: 'youssefmohmmed/dogs-skin-diseases-image-dataset',
+        datasetUrl: 'https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset',
+        datasetAccuracy: 94.23,
+        macroF1: 0.9333,
+        auroc: 0.9943,
+        evaluatedSamples: 433
+      }
     };
   },
 

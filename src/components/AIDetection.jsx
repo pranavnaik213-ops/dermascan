@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   Camera,
+  ExternalLink,
   ImagePlus,
   Info,
+  Layers,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -26,6 +28,16 @@ export default function AIDetection({ onPhotoReady }) {
   const [selectedPresetId, setSelectedPresetId] = useState(null);
   const [animalType, setAnimalType] = useState('Dog');
   const [presetNotice, setPresetNotice] = useState('');
+  const [showGradCam, setShowGradCam] = useState(false);
+  const [modelInfo, setModelInfo] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    api.getModelInfo().then((info) => {
+      if (active) setModelInfo(info);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // Read file from user device
   const readPhoto = (file) => {
@@ -33,6 +45,7 @@ export default function AIDetection({ onPhotoReady }) {
     setPresetNotice('');
     setAnalysisResult(null);
     setSelectedPresetId(null);
+    setShowGradCam(false);
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError('Please choose a valid image file (JPG, PNG, WebP).');
@@ -59,6 +72,7 @@ export default function AIDetection({ onPhotoReady }) {
 
     setError('');
     setPresetNotice('');
+    setShowGradCam(false);
     setIsAnalyzing(true);
     try {
       const result = await api.detect({
@@ -80,6 +94,7 @@ export default function AIDetection({ onPhotoReady }) {
   const selectPreset = (preset) => {
     setSelectedPresetId(preset.id);
     setError('');
+    setShowGradCam(false);
     setAnalysisResult(null); // Clear any previous scan results
     const newPhoto = {
       photoUrl: preset.photoUrl,
@@ -115,10 +130,20 @@ export default function AIDetection({ onPhotoReady }) {
     setAnalysisResult(null);
     setSelectedPresetId(null);
     setPresetNotice('');
+    setShowGradCam(false);
     setError('');
   };
 
   const isHealthyResult = analysisResult?.conditionKey === 'Healthy' || analysisResult?.hasLesion === false;
+  const hasGradCamOverlay = Boolean(analysisResult?.gradCamUrl && analysisResult.gradCamUrl.startsWith('data:image'));
+  const activeImageSrc = (showGradCam && hasGradCamOverlay)
+    ? analysisResult.gradCamUrl
+    : (photo?.dataUrl || photo?.photoUrl);
+  const engineLabel = analysisResult?.engineMode === 'pytorch-convnext-v4'
+    ? 'PyTorch ConvNeXt-Tiny v4.0 + Stage-4 Grad-CAM'
+    : (analysisResult?.engineMode === 'benchmark-preset'
+      ? 'Clinical Benchmark Reference'
+      : 'Offline Browser Fallback');
 
   return (
     <section className="page-wrap content-page ai-detection-page" aria-labelledby="ai-detection-title">
@@ -129,6 +154,55 @@ export default function AIDetection({ onPhotoReady }) {
         <p>
           Upload an animal photo to screen for dermatological lesions. The screening system evaluates the image for active inflammation, alopecia, and skin conditions.
         </p>
+        <div style={{
+          marginTop: '14px',
+          padding: '10px 14px',
+          borderRadius: '10px',
+          border: `1px solid ${modelInfo?.modelReady ? '#bbf7d0' : '#fed7aa'}`,
+          background: modelInfo?.modelReady ? '#f0fdf4' : '#fffbeb',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          fontSize: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: modelInfo?.modelReady ? '#16a34a' : '#d97706',
+              display: 'inline-block',
+              flexShrink: 0
+            }} />
+            <strong style={{ color: '#0f172a' }}>
+              {modelInfo === null
+                ? 'Checking neural backend status...'
+                : (modelInfo.modelReady
+                  ? 'DermaScan-Net v4.0 (ConvNeXt-Tiny) Active'
+                  : 'Offline Client Mode — start `npm start` or `npm run dev:all` for PyTorch ConvNeXt-Tiny + Grad-CAM')}
+            </strong>
+            <span style={{ color: '#475569' }}>
+              94.23% test acc &bull; 0.9943 AUROC &bull; 6 classes
+            </span>
+          </div>
+          <a
+            href={modelInfo?.datasetUrl || 'https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset'}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--brand-dark)',
+              fontWeight: 650,
+              textDecoration: 'none'
+            }}
+          >
+            Kaggle Canine Dataset <ExternalLink size={12} aria-hidden="true" />
+          </a>
+        </div>
       </header>
 
       {/* Main Scanner Workspace */}
@@ -152,8 +226,8 @@ export default function AIDetection({ onPhotoReady }) {
               }}>
                 <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0, maxWidth: '100%' }}>
                   <img
-                    src={photo.dataUrl || photo.photoUrl}
-                    alt="Animal skin subject"
+                    src={activeImageSrc}
+                    alt={showGradCam && hasGradCamOverlay ? 'Grad-CAM lesion attention heatmap' : 'Animal skin subject'}
                     style={{
                       display: 'block',
                       maxWidth: '100%',
@@ -166,8 +240,8 @@ export default function AIDetection({ onPhotoReady }) {
                     }}
                   />
 
-                  {/* Status Overlay: ONLY draw red lesion box if a real lesion was detected (NEVER on healthy skin!) */}
-                  {analysisResult?.roiBox && !isHealthyResult && (
+                  {/* Status Overlay: draw ROI box on original photo when a lesion was detected */}
+                  {!showGradCam && analysisResult?.roiBox && !isHealthyResult && (
                     <div
                       style={{
                         position: 'absolute',
@@ -245,11 +319,24 @@ export default function AIDetection({ onPhotoReady }) {
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflowWrap: 'anywhere' }}>
                   <ImagePlus size={14} style={{ flexShrink: 0 }} /> {photo.name || 'Selected photo'}
                 </span>
-                {analysisResult?.qualityCheck && (
-                  <span style={{ color: analysisResult.qualityCheck.passed ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
-                    Quality: {analysisResult.qualityCheck.visibility}%
-                  </span>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {hasGradCamOverlay && !isHealthyResult && (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => setShowGradCam((prev) => !prev)}
+                      style={{ padding: '4px 10px', minHeight: '32px', fontSize: '11.5px', fontWeight: 700 }}
+                    >
+                      <Layers size={13} aria-hidden="true" />
+                      {showGradCam ? 'Show Original Photo' : 'Show Grad-CAM Heatmap'}
+                    </button>
+                  )}
+                  {analysisResult?.qualityCheck && (
+                    <span style={{ color: analysisResult.qualityCheck.passed ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                      Quality: {analysisResult.qualityCheck.visibility}%
+                    </span>
+                  )}
+                </div>
               </div>
             </>
           ) : (
@@ -400,6 +487,23 @@ export default function AIDetection({ onPhotoReady }) {
                   ? 'Clinical screening confirmed no active lesions, epidermal scaling, pustules, or parasitic crusting. The animal exhibits intact hair follicle density and a healthy sebum barrier.'
                   : analysisResult.description}
               </p>
+
+              <div style={{
+                marginTop: '10px',
+                paddingTop: '8px',
+                borderTop: `1px solid ${isHealthyResult ? '#dcfce7' : '#fee2e2'}`,
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                gap: '6px',
+                fontSize: '11px',
+                color: '#475569'
+              }}>
+                <span>Engine: <strong>{engineLabel}</strong></span>
+                {analysisResult.inferenceTimeMs != null && (
+                  <span>Latency: <strong>{analysisResult.inferenceTimeMs} ms</strong></span>
+                )}
+              </div>
             </div>
 
             {/* Differential Diagnosis: Multi-Class Probability Distribution */}
@@ -462,6 +566,23 @@ export default function AIDetection({ onPhotoReady }) {
                 )}
               </ul>
             </div>
+
+            {analysisResult.recommendedProtocol && (
+              <div style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                border: '1px solid var(--border)',
+                fontSize: '12px',
+                color: '#334155',
+                lineHeight: 1.5
+              }}>
+                <strong style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--ink)', marginBottom: '3px' }}>
+                  Veterinary Care Guidance
+                </strong>
+                {analysisResult.recommendedProtocol}
+              </div>
+            )}
 
             {/* Proceed CTA Button */}
             <button
@@ -587,6 +708,7 @@ export default function AIDetection({ onPhotoReady }) {
           setPhoto({ dataUrl, name: 'Camera capture' });
           setError('');
           setPresetNotice('Camera photo captured. Click "Scan & Analyze with AI" below to evaluate.');
+          setShowGradCam(false);
           setAnalysisResult(null);
         }}
       />

@@ -8,6 +8,7 @@ import {
   Eye,
   FileSpreadsheet,
   Filter,
+  Layers,
   Lock,
   LogOut,
   MapPin,
@@ -72,6 +73,7 @@ export default function AdminDashboard({ setActiveTab }) {
   // Detail Modal / Lightbox State
   const [inspectingReport, setInspectingReport] = useState(null);
   const [adminNoteInput, setAdminNoteInput] = useState('');
+  const [showModalGradCam, setShowModalGradCam] = useState(false);
   const [actionNotice, setActionNotice] = useState('');
 
   // Load all reports from IndexedDB + localStorage permanent storage
@@ -606,6 +608,7 @@ export default function AdminDashboard({ setActiveTab }) {
                             onClick={() => {
                               setInspectingReport(report);
                               setAdminNoteInput(report.adminNotes || '');
+                              setShowModalGradCam(false);
                             }}
                             title="Click to inspect photo"
                             style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
@@ -734,6 +737,7 @@ export default function AdminDashboard({ setActiveTab }) {
                             onClick={() => {
                               setInspectingReport(report);
                               setAdminNoteInput(report.adminNotes || '');
+                              setShowModalGradCam(false);
                             }}
                             title="Inspect full details"
                             style={{ padding: '6px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -802,12 +806,27 @@ export default function AdminDashboard({ setActiveTab }) {
 
             {/* Photo Preview */}
             {inspectingReport.photoUrl && (
-              <div style={{ marginBottom: '16px', borderRadius: '10px', overflow: 'hidden', background: '#000', textAlign: 'center' }}>
-                <img
-                  src={inspectingReport.photoUrl}
-                  alt={`Report ${inspectingReport.id}`}
-                  style={{ maxHeight: '380px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
-                />
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ borderRadius: '10px', overflow: 'hidden', background: '#000', textAlign: 'center' }}>
+                  <img
+                    src={(showModalGradCam && inspectingReport.aiDiagnosis?.gradCamUrl) ? inspectingReport.aiDiagnosis.gradCamUrl : inspectingReport.photoUrl}
+                    alt={`Report ${inspectingReport.id}`}
+                    style={{ maxHeight: '380px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+                  />
+                </div>
+                {inspectingReport.aiDiagnosis?.gradCamUrl && inspectingReport.aiDiagnosis.gradCamUrl.startsWith('data:image') && (
+                  <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => setShowModalGradCam(prev => !prev)}
+                      style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <Layers size={13} />
+                      {showModalGradCam ? 'Show Original Photo' : 'Show Grad-CAM Heatmap'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

@@ -273,6 +273,7 @@ def analyze_image(image_input: str | Path | Image.Image) -> dict:
         "gradCamUrl": gradcam_url,
         "qualityCheck": quality,
         "inferenceTimeMs": elapsed_ms,
+        "engineMode": "pytorch-convnext-v4",
         "modelMetrics": {
             "version": ckpt.get("version", "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)"),
             "datasetSlug": ckpt.get("dataset_slug"),
@@ -285,12 +286,36 @@ def analyze_image(image_input: str | Path | Image.Image) -> dict:
     }
 
 
+def serve_worker() -> None:
+    """Keep ConvNeXt-Tiny warm in memory and process JSON-line inference requests via stdin/stdout."""
+    _, ckpt, _ = get_model_runtime()
+    print(json.dumps({"ready": True, "version": ckpt.get("version", "DermaScan-Net v4.0")}), flush=True)
+
+    for raw_line in sys.stdin:
+        line = raw_line.strip()
+        if not line:
+            continue
+        req_id = None
+        try:
+            payload = json.loads(line)
+            req_id = payload.get("id")
+            result = analyze_image(payload["imagePath"])
+            result["requestId"] = req_id
+            print(json.dumps(result), flush=True)
+        except Exception as exc:
+            print(json.dumps({"requestId": req_id, "error": str(exc)}), flush=True)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No image argument provided"}))
         sys.exit(1)
 
     arg = sys.argv[1]
+    if arg == "--serve":
+        serve_worker()
+        return
+
     try:
         result = analyze_image(arg)
         print(json.dumps(result))

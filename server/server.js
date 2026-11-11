@@ -1,14 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import os from 'os';
 import path from 'path';
 import fs from 'fs';
-import { execFile } from 'child_process';
+import readline from 'readline';
+import { execFile, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { db, UPLOADS_DIR } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
+const ENGINE_SCRIPT_PATH = path.join(__dirname, 'ai_engine.py');
+const CHECKPOINT_PT_PATH = path.join(__dirname, 'models', 'dermascan_kaggle_convnext_v4.pt');
+const EVALUATION_JSON_PATH = path.join(__dirname, 'models', 'kaggle_evaluation.json');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -78,6 +85,33 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/stats', (_req, res) => {
   res.json(db.getStats());
+});
+
+app.get('/api/model/info', (_req, res) => {
+  const checkpointExists = fs.existsSync(CHECKPOINT_PT_PATH);
+  let evaluation = null;
+  if (fs.existsSync(EVALUATION_JSON_PATH)) {
+    try {
+      evaluation = JSON.parse(fs.readFileSync(EVALUATION_JSON_PATH, 'utf-8'));
+    } catch {
+      evaluation = null;
+    }
+  }
+
+  res.json({
+    online: true,
+    modelReady: checkpointExists,
+    checkpointExists,
+    workerWarm: pyWorker.ready,
+    version: evaluation?.version || 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
+    architecture: evaluation?.architecture || 'torchvision.models.convnext_tiny',
+    datasetSlug: evaluation?.dataset_slug || 'youssefmohmmed/dogs-skin-diseases-image-dataset',
+    datasetUrl: evaluation?.dataset_url || 'https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset',
+    classes: evaluation?.classes || [],
+    datasetSplits: evaluation?.dataset_splits || null,
+    testMetrics: evaluation?.test_metrics || null,
+    validMetrics: evaluation?.valid_metrics || null
+  });
 });
 
 // 2. Cases & Reports CRUD
@@ -296,22 +330,103 @@ const CLINICAL_DISEASE_CATALOG = {
   }
 };
 
-// Helper: Run real PyTorch deep learning inference via Python engine
-function runPyTorchInference(imageDiskPath) {
-  return new Promise((resolve, reject) => {
-    const projectRoot = path.resolve(__dirname, '..');
-    const venvPythonWin = path.join(projectRoot, '.venv-ml', 'Scripts', 'python.exe');
-    const venvPythonUnix = path.join(projectRoot, '.venv-ml', 'bin', 'python');
-    const engineScript = path.join(__dirname, 'ai_engine.py');
+function resolvePythonExecutable() {
+  const venvPythonWin = path.join(PROJECT_ROOT, '.venv-ml', 'Scripts', 'python.exe');
+  const venvPythonUnix = path.join(PROJECT_ROOT, '.venv-ml', 'bin', 'python');
+  if (fs.existsSync(venvPythonWin)) return venvPythonWin;
+  if (fs.existsSync(venvPythonUnix)) return venvPythonUnix;
+  return 'python';
+}
 
-    let pythonExe = 'python';
-    if (fs.existsSync(venvPythonWin)) {
-      pythonExe = venvPythonWin;
-    } else if (fs.existsSync(venvPythonUnix)) {
-      pythonExe = venvPythonUnix;
+// Persistent warm PyTorch worker keeps ConvNeXt-Tiny v4.0 loaded in memory
+const pyWorker = {
+  proc: null,
+  ready: false,
+  nextId: 1,
+  pending: new Map(),
+  start() {
+    if (this.proc || !fs.existsSync(CHECKPOINT_PT_PATH)) return;
+    try {
+      const proc = spawn(resolvePythonExecutable(), [ENGINE_SCRIPT_PATH, '--serve'], {
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      this.proc = proc;
+      this.ready = false;
+
+      const rl = readline.createInterface({ input: proc.stdout });
+      rl.on('line', (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        try {
+          const msg = JSON.parse(trimmed);
+          if (msg.ready) {
+            this.ready = true;
+            console.log(`[AI Engine] Warm PyTorch worker loaded: ${msg.version}`);
+            return;
+          }
+          const reqId = msg.requestId;
+          const entry = this.pending.get(reqId);
+          if (!entry) return;
+          this.pending.delete(reqId);
+          clearTimeout(entry.timer);
+          if (msg.error) {
+            entry.reject(new Error(msg.error));
+          } else {
+            entry.resolve(msg);
+          }
+        } catch (err) {
+          console.warn('[AI Engine] Worker stdout parse note:', err.message);
+        }
+      });
+
+      proc.stderr.on('data', (chunk) => {
+        const txt = chunk.toString().trim();
+        if (txt) console.warn('[AI Worker stderr]', txt);
+      });
+
+      proc.on('exit', () => {
+        this.ready = false;
+        this.proc = null;
+        for (const [id, entry] of this.pending.entries()) {
+          clearTimeout(entry.timer);
+          entry.reject(new Error('PyTorch worker exited unexpectedly'));
+          this.pending.delete(id);
+        }
+      });
+    } catch (err) {
+      console.warn('[AI Engine] Failed to spawn warm worker:', err.message);
+      this.proc = null;
+      this.ready = false;
     }
+  },
+  infer(imageDiskPath, timeoutMs = 30000) {
+    return new Promise((resolve, reject) => {
+      if (!this.proc || !this.ready || !this.proc.stdin.writable) {
+        return reject(new Error('Warm worker unavailable'));
+      }
+      const reqId = this.nextId++;
+      const timer = setTimeout(() => {
+        this.pending.delete(reqId);
+        reject(new Error('Warm PyTorch worker timed out'));
+      }, timeoutMs);
+      this.pending.set(reqId, { resolve, reject, timer });
+      this.proc.stdin.write(`${JSON.stringify({ id: reqId, imagePath: imageDiskPath })}\n`);
+    });
+  }
+};
 
-    execFile(pythonExe, [engineScript, imageDiskPath], { timeout: 30000 }, (err, stdout, stderr) => {
+// Run PyTorch ConvNeXt-Tiny v4.0 inference (warm worker first, one-shot CLI fallback)
+async function runPyTorchInference(imageDiskPath) {
+  if (pyWorker.ready) {
+    try {
+      return await pyWorker.infer(imageDiskPath);
+    } catch (warmErr) {
+      console.warn(`[AI Engine] Warm worker fallback: ${warmErr.message}`);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    execFile(resolvePythonExecutable(), [ENGINE_SCRIPT_PATH, imageDiskPath], { timeout: 30000 }, (err, stdout, stderr) => {
       if (err) {
         return reject(new Error(`PyTorch engine error: ${err.message} | ${stderr}`));
       }
@@ -430,7 +545,17 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
         allProbabilities,
         qualityCheck: { passed: true, brightness: 92, sharpness: 90, visibility: 94, message: "Optimal Image Quality Verified (Benchmark Clinical Standard)" },
         roiBox: isHealthy ? null : PRESET_ROI_MAP[req.body.presetId],
-        inferenceTimeMs: 120
+        inferenceTimeMs: 120,
+        engineMode: 'benchmark-preset',
+        modelMetrics: {
+          version: "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)",
+          datasetSlug: "youssefmohmmed/dogs-skin-diseases-image-dataset",
+          datasetUrl: "https://www.kaggle.com/datasets/youssefmohmmed/dogs-skin-diseases-image-dataset",
+          datasetAccuracy: 94.23,
+          macroF1: 0.9333,
+          auroc: 0.9943,
+          evaluatedSamples: 433
+        }
       });
     }
 
@@ -522,6 +647,7 @@ app.post('/api/detect', upload.single('photo'), async (req, res) => {
         height: '48%'
       },
       inferenceTimeMs: 142,
+      engineMode: 'server-heuristic-fallback',
       modelMetrics: {
         version: "DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)",
         datasetSlug: "youssefmohmmed/dogs-skin-diseases-image-dataset",
@@ -650,14 +776,57 @@ app.post('/api/reset', (_req, res) => {
   res.json({ success: true, message: 'Database reset to initial seed state.' });
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
+// Serve built React frontend (`dist/`) for mobile, iOS, and local full-stack access
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      return next();
+    }
+    const indexHtml = path.join(DIST_DIR, 'index.html');
+    if (fs.existsSync(indexHtml)) {
+      return res.sendFile(indexHtml);
+    }
+    return next();
+  });
+}
+
+function getLocalNetworkUrls(port) {
+  const urls = [];
+  const nets = os.networkInterfaces();
+  for (const entries of Object.values(nets)) {
+    for (const info of entries || []) {
+      if (info.family === 'IPv4' && !info.internal) {
+        urls.push(`http://${info.address}:${port}`);
+      }
+    }
+  }
+  return urls;
+}
+
+// Start Server & warm up ConvNeXt-Tiny v4.0 PyTorch worker
+const server = app.listen(PORT, '0.0.0.0', () => {
+  const lanUrls = getLocalNetworkUrls(PORT);
   console.log(`=======================================================`);
-  console.log(`🐾 DermaScan Free Backend Server running on port ${PORT}`);
+  console.log(`🐾 DermaScan Server running on port ${PORT}`);
   console.log(`   Local URL:    http://localhost:${PORT}`);
+  if (lanUrls.length > 0) {
+    console.log(`   Mobile/LAN:   ${lanUrls.join(', ')}`);
+  }
   console.log(`   Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`   Uploads Dir:  ${UPLOADS_DIR}`);
-  console.log(`   Database:     File-backed (100% Free / Zero Setup)`);
+  console.log(`   Model Info:   http://localhost:${PORT}/api/model/info`);
+  console.log(`   Frontend:     ${fs.existsSync(DIST_DIR) ? DIST_DIR : 'not built (run npm run build)'}`);
   console.log(`=======================================================`);
+  pyWorker.start();
 });
+
+function shutdownGracefully() {
+  if (pyWorker.proc) {
+    pyWorker.proc.kill();
+  }
+  server.close(() => process.exit(0));
+}
+
+process.on('SIGINT', shutdownGracefully);
+process.on('SIGTERM', shutdownGracefully);
 
