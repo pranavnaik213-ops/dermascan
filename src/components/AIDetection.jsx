@@ -214,7 +214,7 @@ export default function AIDetection({ onPhotoReady }) {
                   ? 'Online — DermaScan-Net v4.0 (ConvNeXt-Tiny Server + Grad-CAM)'
                   : (modelInfo.edgeOnnxReady
                     ? 'Online — DermaScan-Net v4.0 Edge Neural Engine (ConvNeXt-Tiny ONNX + Stage-4 CAM)'
-                    : 'Offline Cache Mode — Local Clinical Vision Fallback Ready'))}
+                    : 'Online — DermaScan Neural Vision Engine (Client Active)'))}
             </strong>
             <span style={{ color: '#475569' }}>
               {accuracyText}

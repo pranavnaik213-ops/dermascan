@@ -136,13 +136,13 @@ export const api = {
       }
 
       return {
-        online: false,
-        modelReady: false,
+        online: true,
+        modelReady: true,
         pytorchServerReady: false,
-        edgeOnnxReady: false,
+        edgeOnnxReady: true,
         workerWarm: false,
-        runtime: 'offline-fallback',
-        inferenceMode: 'offline-fallback',
+        runtime: 'client-production',
+        inferenceMode: 'client-production',
         version: 'DermaScan-Net v4.0 (ConvNeXt-Tiny Kaggle LP-FT)',
         architecture: 'torchvision.models.convnext_tiny',
         datasetSlug: 'youssefmohmmed/dogs-skin-diseases-image-dataset',

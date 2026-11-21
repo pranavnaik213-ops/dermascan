@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Building2,
   CheckCircle2,
   Compass,
+  ExternalLink,
   HeartHandshake,
   Home,
   LocateFixed,
@@ -12,7 +11,6 @@ import {
   MapPin,
   Navigation,
   Phone,
-  RefreshCw,
   Search,
   ShieldAlert,
   Star,
@@ -21,85 +19,7 @@ import {
 } from 'lucide-react';
 import { calculateDistanceKm } from '../data/mockData';
 
-// User Live Location Radar Beacon Marker
-const createUserMarkerIcon = () => {
-  return L.divIcon({
-    className: 'leaflet-user-beacon',
-    html: `
-      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-        <div style="
-          position: absolute;
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          background: rgba(2, 132, 199, 0.25);
-          border: 2px solid #0284c7;
-          animation: userBeaconRadar 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
-        "></div>
-        <div style="
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #0284c7;
-          border: 3px solid #ffffff;
-          box-shadow: 0 0 12px rgba(2, 132, 199, 0.9);
-          position: relative;
-          z-index: 2;
-        "></div>
-      </div>
-    `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
-  });
-};
-
-// Custom Clinical Markers for Facilities
-const createFacilityMarkerIcon = (type, isSelected) => {
-  let bg = '#0d9488';
-  let emoji = '🏥';
-
-  if (type === 'emergency') {
-    bg = '#dc2626';
-    emoji = '🚨';
-  } else if (type === 'hospital') {
-    bg = '#059669';
-    emoji = '🏥';
-  } else if (type === 'ngo') {
-    bg = '#0d9488';
-    emoji = '🐾';
-  } else if (type === 'daycare') {
-    bg = '#d97706';
-    emoji = '🏠';
-  }
-
-  const size = isSelected ? 40 : 32;
-  return L.divIcon({
-    className: 'leaflet-facility-marker',
-    html: `
-      <div style="
-        background: ${bg};
-        width: ${size}px;
-        height: ${size}px;
-        border-radius: 10px;
-        border: 2.5px solid #ffffff;
-        box-shadow: ${isSelected ? `0 0 18px ${bg}, 0 6px 12px rgba(0,0,0,0.3)` : '0 3px 8px rgba(0,0,0,0.25)'};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: ${isSelected ? '18px' : '14px'};
-        transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        cursor: pointer;
-      ">
-        ${emoji}
-      </div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
-  });
-};
-
-// Verified Facilities Dataset (Spanning South, North, East, West & Central Bangalore)
+// Verified Care Facilities (Covering South, North, East, West & Central sectors)
 const ALL_FACILITIES = [
   {
     id: 'cessna-kanakapura',
@@ -117,7 +37,8 @@ const ALL_FACILITIES = [
     reviews: 540,
     verified: true,
     coordinates: { lat: 12.9095, lng: 77.5645 },
-    specialties: ['24/7 Trauma ICU', 'Skin Scraping Lab', 'Wood\'s Lamp Diagnostics', 'Digital Radiography']
+    specialties: ['24/7 Trauma ICU', 'Skin Scraping Lab', 'Wood\'s Lamp Diagnostics', 'Digital Radiography'],
+    searchQuery: 'Cessna Lifeline Veterinary Hospital Kanakapura Road Bengaluru'
   },
   {
     id: 'paws-tails-ks-layout',
@@ -135,7 +56,8 @@ const ALL_FACILITIES = [
     reviews: 195,
     verified: true,
     coordinates: { lat: 12.9042, lng: 77.5582 },
-    specialties: ['Day Care & Boarding', 'Medicated Skin Baths', 'Outpatient Vet Triage', 'Grooming']
+    specialties: ['Day Care & Boarding', 'Medicated Skin Baths', 'Outpatient Vet Triage', 'Grooming'],
+    searchQuery: 'Pet clinic day care Kumaraswamy Layout Bengaluru'
   },
   {
     id: 'sarvoham-jp-nagar',
@@ -153,7 +75,8 @@ const ALL_FACILITIES = [
     reviews: 420,
     verified: true,
     coordinates: { lat: 12.8797, lng: 77.5510 },
-    specialties: ['Dedicated Mange Ward', 'Stray Ambulance', 'Free Trauma Recovery', 'Adoption Sanctuary']
+    specialties: ['Dedicated Mange Ward', 'Stray Ambulance', 'Free Trauma Recovery', 'Adoption Sanctuary'],
+    searchQuery: 'Sarvoham Animal Foundation Kanakapura Road Bengaluru'
   },
   {
     id: 'jayanagar-pet-hospital',
@@ -171,7 +94,8 @@ const ALL_FACILITIES = [
     reviews: 380,
     verified: true,
     coordinates: { lat: 12.9285, lng: 77.5835 },
-    specialties: ['Dermatological Scraping', 'Surgical Theatre', 'Vaccination', 'Inpatient Kennels']
+    specialties: ['Dermatological Scraping', 'Surgical Theatre', 'Vaccination', 'Inpatient Kennels'],
+    searchQuery: 'Government Veterinary Hospital Jayanagar Bengaluru'
   },
   {
     id: 'pfa-kengeri',
@@ -189,7 +113,8 @@ const ALL_FACILITIES = [
     reviews: 690,
     verified: true,
     coordinates: { lat: 12.9156, lng: 77.4827 },
-    specialties: ['Mobile Animal Ambulance', 'Trauma Casualty', 'Subsidized Stray Care', 'Wildlife Care']
+    specialties: ['Mobile Animal Ambulance', 'Trauma Casualty', 'Subsidized Stray Care', 'Wildlife Care'],
+    searchQuery: 'People For Animals PFA Kengeri Bengaluru'
   },
   {
     id: 'kvafsu-hebbal',
@@ -207,7 +132,8 @@ const ALL_FACILITIES = [
     reviews: 860,
     verified: true,
     coordinates: { lat: 13.0298, lng: 77.5898 },
-    specialties: ['Mycological Lab', 'Isolation Ward', 'Low-Cost Govt Care', '24/7 Casualty']
+    specialties: ['Mycological Lab', 'Isolation Ward', 'Low-Cost Govt Care', '24/7 Casualty'],
+    searchQuery: 'KVAFSU Veterinary College Hospital Bellary Road Hebbal Bengaluru'
   },
   {
     id: 'cupa-trauma-hebbal',
@@ -225,7 +151,8 @@ const ALL_FACILITIES = [
     reviews: 940,
     verified: true,
     coordinates: { lat: 13.0358, lng: 77.5970 },
-    specialties: ['Mange Isolation Ward', 'Free Rescue Van', 'Critical ICU', 'Subsidized Surgery']
+    specialties: ['Mange Isolation Ward', 'Free Rescue Van', 'Critical ICU', 'Subsidized Surgery'],
+    searchQuery: 'CUPA Animal Hospital Bellary Road Hebbal Bengaluru'
   },
   {
     id: 'care-yelahanka',
@@ -243,7 +170,8 @@ const ALL_FACILITIES = [
     reviews: 770,
     verified: true,
     coordinates: { lat: 13.0782, lng: 77.6067 },
-    specialties: ['Hydrotherapy', 'Canine Rehabilitation', '24/7 Ambulance', 'Adoption Sanctuary']
+    specialties: ['Hydrotherapy', 'Canine Rehabilitation', '24/7 Ambulance', 'Adoption Sanctuary'],
+    searchQuery: 'Charlies Animal Rescue Centre CARE Yelahanka Bengaluru'
   },
   {
     id: 'cessna-domlur',
@@ -261,7 +189,8 @@ const ALL_FACILITIES = [
     reviews: 1140,
     verified: true,
     coordinates: { lat: 12.9612, lng: 77.6432 },
-    specialties: ['CT Scan & Fluoroscopy', 'Blood Bank', 'Emergency ICU', 'Dermatology Lab']
+    specialties: ['CT Scan & Fluoroscopy', 'Blood Bank', 'Emergency ICU', 'Dermatology Lab'],
+    searchQuery: 'Cessna Lifeline Veterinary Hospital Domlur Bengaluru'
   },
   {
     id: 'whitefield-pet-hospital',
@@ -279,50 +208,26 @@ const ALL_FACILITIES = [
     reviews: 460,
     verified: true,
     coordinates: { lat: 12.9698, lng: 77.7499 },
-    specialties: ['Pet Day Boarding', 'Skin & Allergy Testing', 'Surgery', 'Ultrasound']
+    specialties: ['Pet Day Boarding', 'Skin & Allergy Testing', 'Surgery', 'Ultrasound'],
+    searchQuery: 'Whitefield Animal Hospital Hope Farm Bengaluru'
   }
 ];
 
-const PRESET_METROS = [
-  { id: 'bangalore-south', name: 'Kumaraswamy Layout / Kanakapura Rd', lat: 12.9060, lng: 77.5610 },
-  { id: 'bangalore-central', name: 'Bengaluru (Central / MG Road)', lat: 12.9716, lng: 77.5946 },
-  { id: 'bangalore-north', name: 'Hebbal & Bellary Road', lat: 13.0298, lng: 77.5898 },
-  { id: 'bangalore-east', name: 'Indiranagar & Domlur', lat: 12.9612, lng: 77.6432 },
-  { id: 'mumbai', name: 'Mumbai (Bandra / Western)', lat: 19.0596, lng: 72.8295 },
-  { id: 'delhi', name: 'Delhi NCR (South Delhi)', lat: 28.5355, lng: 77.2090 },
-  { id: 'hyderabad', name: 'Hyderabad (Hitec City)', lat: 17.4435, lng: 78.3772 },
-  { id: 'pune', name: 'Pune (Koregaon Park)', lat: 18.5362, lng: 73.8940 }
+const PRESET_LOCALITIES = [
+  { id: 'bangalore-ks-layout', name: 'Kumaraswamy Layout & Kanakapura Rd', lat: 12.9060, lng: 77.5610, query: 'Kumaraswamy Layout, Bengaluru' },
+  { id: 'bangalore-jayanagar', name: 'Jayanagar & JP Nagar', lat: 12.9285, lng: 77.5835, query: 'Jayanagar, Bengaluru' },
+  { id: 'bangalore-hebbal', name: 'Hebbal & Bellary Road', lat: 13.0298, lng: 77.5898, query: 'Hebbal, Bengaluru' },
+  { id: 'bangalore-indiranagar', name: 'Indiranagar & Domlur', lat: 12.9612, lng: 77.6432, query: 'Indiranagar, Bengaluru' },
+  { id: 'bangalore-whitefield', name: 'Whitefield & ITPL', lat: 12.9698, lng: 77.7499, query: 'Whitefield, Bengaluru' },
+  { id: 'bangalore-kengeri', name: 'Kengeri & Mysore Road', lat: 12.9156, lng: 77.4827, query: 'Kengeri, Bengaluru' },
+  { id: 'mumbai-bandra', name: 'Mumbai (Bandra West)', lat: 19.0596, lng: 72.8295, query: 'Bandra West, Mumbai' },
+  { id: 'delhi-south', name: 'Delhi NCR (South Delhi)', lat: 28.5355, lng: 77.2090, query: 'South Delhi, Delhi' },
+  { id: 'hyderabad-hitec', name: 'Hyderabad (Hitec City)', lat: 17.4435, lng: 78.3772, query: 'Hitec City, Hyderabad' },
+  { id: 'pune-koregaon', name: 'Pune (Koregaon Park)', lat: 18.5362, lng: 73.8940, query: 'Koregaon Park, Pune' }
 ];
-
-const TILE_LAYERS = {
-  roadmap: {
-    name: 'Google Roadmap',
-    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google Maps'
-  },
-  satellite: {
-    name: 'Satellite View',
-    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    attribution: '&copy; Google Maps Satellite'
-  },
-  voyager: {
-    name: 'Clean Medical',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CARTO &copy; OpenStreetMap'
-  }
-};
 
 export default function NearbyCare({ report }) {
-  // Direct DOM ref for pure Leaflet map container (100% immune to React 19 StrictMode crashes)
-  const mapContainerRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const tileLayerRef = useRef(null);
-  const markersGroupRef = useRef(null);
-  const routeLineRef = useRef(null);
-  const userBeaconRef = useRef(null);
-  const accuracyCircleRef = useRef(null);
-
-  // User Location State (Initializes directly at Kumaraswamy Layout / Kanakapura Rd from user's screen)
+  // User Location State (Initializes directly at Kumaraswamy Layout / Kanakapura Rd)
   const [userLocation, setUserLocation] = useState(() => {
     if (report?.coordinates?.lat && report?.coordinates?.lng) {
       return {
@@ -345,12 +250,14 @@ export default function NearbyCare({ report }) {
   const [isLocating, setIsLocating] = useState(false);
   const [gpsNotice, setGpsNotice] = useState('Location active: Kumaraswamy Layout, Bengaluru');
   const [selectedFacilityId, setSelectedFacilityId] = useState(ALL_FACILITIES[0].id);
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'emergency', 'hospital', 'ngo', 'daycare'
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTileType, setActiveTileType] = useState('roadmap');
-  const [mapError, setMapError] = useState(null);
+  
+  // Real Google Maps View Mode: 'nearby', 'current-location', 'facility'
+  const [mapMode, setMapMode] = useState('nearby'); // 'nearby', 'current-location', 'facility'
+  const [selectedFacilityForMap, setSelectedFacilityForMap] = useState(ALL_FACILITIES[0]);
 
-  // Compute live distances for all facilities from user location
+  // Compute live distance and drive times for all facilities from user location
   const facilitiesWithDistance = useMemo(() => {
     return ALL_FACILITIES.map((facility) => {
       const distanceKm = calculateDistanceKm(
@@ -386,205 +293,54 @@ export default function NearbyCare({ report }) {
     });
   }, [facilitiesWithDistance, categoryFilter, searchQuery]);
 
-  const selectedFacility = useMemo(() => {
-    return (
-      filteredFacilities.find((f) => f.id === selectedFacilityId) ||
-      facilitiesWithDistance.find((f) => f.id === selectedFacilityId) ||
-      filteredFacilities[0] ||
-      facilitiesWithDistance[0]
-    );
-  }, [filteredFacilities, facilitiesWithDistance, selectedFacilityId]);
+  // Real Google Maps Embed URL generator
+  const googleMapEmbedUrl = useMemo(() => {
+    if (mapMode === 'current-location') {
+      // Direct pin on user's exact current location coordinates
+      return `https://www.google.com/maps?q=${userLocation.lat},${userLocation.lng}&z=16&output=embed`;
+    }
+
+    if (mapMode === 'facility' && selectedFacilityForMap) {
+      // Focus on the specific selected veterinary hospital
+      const query = encodeURIComponent(`${selectedFacilityForMap.name}, ${selectedFacilityForMap.address}`);
+      return `https://www.google.com/maps?q=${query}&z=16&output=embed`;
+    }
+
+    // Default 'nearby' mode: Search for veterinary care around user's exact coordinates
+    let keyword = 'veterinary hospital pet clinic animal emergency';
+    if (categoryFilter === 'emergency') {
+      keyword = '24 hours emergency pet hospital veterinary casualty';
+    } else if (categoryFilter === 'hospital') {
+      keyword = 'veterinary hospital pet clinic';
+    } else if (categoryFilter === 'ngo') {
+      keyword = 'animal rescue NGO stray dog shelter';
+    } else if (categoryFilter === 'daycare') {
+      keyword = 'pet day care boarding dog creche';
+    }
+
+    const query = encodeURIComponent(`${keyword} near ${userLocation.lat},${userLocation.lng}`);
+    return `https://www.google.com/maps?q=${query}&z=14&output=embed`;
+  }, [mapMode, userLocation.lat, userLocation.lng, selectedFacilityForMap, categoryFilter]);
+
+  // Native Google Maps Full URL (for external navigation or opening in Google Maps app)
+  const fullGoogleMapsUrl = useMemo(() => {
+    if (mapMode === 'current-location') {
+      return `https://www.google.com/maps/search/?api=1&query=${userLocation.lat},${userLocation.lng}`;
+    }
+    if (mapMode === 'facility' && selectedFacilityForMap) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${encodeURIComponent(`${selectedFacilityForMap.name} ${selectedFacilityForMap.address}`)}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`veterinary hospital near ${userLocation.lat},${userLocation.lng}`)}`;
+  }, [mapMode, userLocation.lat, userLocation.lng, selectedFacilityForMap]);
 
   // Turn-by-turn navigation URL in Google Maps
-  const getDirectionsUrl = useCallback((destLat, destLng) => {
+  const getDirectionsUrl = useCallback((facility) => {
     const originParam = `${userLocation.lat},${userLocation.lng}`;
-    return `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destLat},${destLng}&travelmode=driving`;
+    const destParam = encodeURIComponent(`${facility.name}, ${facility.address}`);
+    return `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
   }, [userLocation.lat, userLocation.lng]);
 
-  const handleSelectFacility = useCallback((facility) => {
-    setSelectedFacilityId(facility.id);
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([facility.coordinates.lat, facility.coordinates.lng], 14, {
-        duration: 1.0
-      });
-    }
-  }, []);
-
-  // 1. Initialize Leaflet Map Instance cleanly on mount (immune to React 19 StrictMode double-mounting)
-  const initialCenterRef = useRef([userLocation.lat, userLocation.lng]);
-
-  useEffect(() => {
-    if (!mapContainerRef.current) return undefined;
-
-    // Clean any residual leaflet container ID to guarantee zero "already initialized" errors
-    if (mapContainerRef.current._leaflet_id) {
-      delete mapContainerRef.current._leaflet_id;
-    }
-
-    try {
-      const map = L.map(mapContainerRef.current, {
-        center: initialCenterRef.current,
-        zoom: 13,
-        scrollWheelZoom: false,
-        zoomControl: true
-      });
-
-      // Google Roadmap tile layer (works 100% reliably in India and globally)
-      const tileConfig = TILE_LAYERS.roadmap;
-      tileLayerRef.current = L.tileLayer(tileConfig.url, {
-        maxZoom: 20,
-        attribution: tileConfig.attribution
-      }).addTo(map);
-
-      // Feature group for markers
-      markersGroupRef.current = L.featureGroup().addTo(map);
-      mapInstanceRef.current = map;
-
-      // Invalidate container size across multiple ticks to eliminate any grey tile edges
-      setTimeout(() => map.invalidateSize(), 60);
-      setTimeout(() => map.invalidateSize(), 200);
-      setTimeout(() => map.invalidateSize(), 500);
-      setTimeout(() => map.invalidateSize(), 1000);
-    } catch (err) {
-      console.error('[NearbyCare] Leaflet initialization error:', err);
-      setTimeout(() => {
-        setMapError(err.message || 'Could not initialize map');
-      }, 0);
-    }
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
-
-  // 2. Switch Tile Layer dynamically when activeTileType changes
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-    const tileConfig = TILE_LAYERS[activeTileType] || TILE_LAYERS.roadmap;
-
-    if (tileLayerRef.current) {
-      tileLayerRef.current.remove();
-    }
-    tileLayerRef.current = L.tileLayer(tileConfig.url, {
-      maxZoom: 20,
-      attribution: tileConfig.attribution
-    }).addTo(map);
-  }, [activeTileType]);
-
-  // 3. Update User Live Location Beacon on map
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-
-    if (userBeaconRef.current) {
-      userBeaconRef.current.remove();
-    }
-    if (accuracyCircleRef.current) {
-      accuracyCircleRef.current.remove();
-    }
-
-    // Accuracy Circle
-    accuracyCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
-      radius: Math.max(60, userLocation.accuracy || 25),
-      color: '#0284c7',
-      fillColor: '#38bdf8',
-      fillOpacity: 0.12,
-      weight: 1.5
-    }).addTo(map);
-
-    // User Radar Marker
-    userBeaconRef.current = L.marker([userLocation.lat, userLocation.lng], {
-      icon: createUserMarkerIcon(),
-      zIndexOffset: 1000
-    }).addTo(map);
-
-    userBeaconRef.current.bindPopup(`
-      <div style="text-align: center; padding: 4px; font-family: inherit;">
-        <strong style="color: #0284c7; font-size: 13.5px; display: block; margin-bottom: 2px;">Your Current Location</strong>
-        <span style="font-size: 12px; color: #475569; display: block;">${userLocation.label}</span>
-        <span style="font-size: 11px; color: #94a3b8;">${userLocation.lat.toFixed(4)}° N, ${userLocation.lng.toFixed(4)}° E</span>
-      </div>
-    `);
-  }, [userLocation]);
-
-  // 4. Update Facility Markers & Popups when filteredFacilities or selectedFacilityId changes
-  useEffect(() => {
-    if (!mapInstanceRef.current || !markersGroupRef.current) return;
-    markersGroupRef.current.clearLayers();
-
-    filteredFacilities.forEach((facility) => {
-      const isSelected = facility.id === selectedFacilityId;
-      const marker = L.marker([facility.coordinates.lat, facility.coordinates.lng], {
-        icon: createFacilityMarkerIcon(facility.type, isSelected)
-      });
-
-      marker.bindPopup(`
-        <div style="max-width: 260px; padding: 4px; font-family: inherit;">
-          <span style="display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${facility.type === 'emergency' ? '#fee2e2' : '#ecfdf5'}; color: ${facility.type === 'emergency' ? '#991b1b' : '#065f46'}; margin-bottom: 4px;">
-            ${facility.categoryLabel}
-          </span>
-          <strong style="display: block; font-size: 14px; color: #0f172a; margin: 2px 0 4px; line-height: 1.3;">
-            ${facility.name}
-          </strong>
-          <div style="font-size: 12px; color: #0d9488; font-weight: 700; margin-bottom: 6px;">
-            📍 ${facility.distanceKm} km away • ~${facility.driveMinutes} min drive
-          </div>
-          <p style="font-size: 11.5px; color: #64748b; margin: 0 0 8px; line-height: 1.35;">
-            ${facility.address}
-          </p>
-          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${facility.coordinates.lat},${facility.coordinates.lng}&travelmode=driving"
-            target="_blank" rel="noopener noreferrer"
-            style="display: block; text-align: center; background: #0d9488; color: #ffffff; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
-            Navigate with Google Maps
-          </a>
-        </div>
-      `);
-
-      marker.on('click', () => {
-        handleSelectFacility(facility);
-      });
-
-      markersGroupRef.current.addLayer(marker);
-    });
-  }, [filteredFacilities, selectedFacilityId, userLocation.lat, userLocation.lng, handleSelectFacility]);
-
-  // 5. Draw active curved driving polyline from user location to selected facility
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-
-    if (routeLineRef.current) {
-      routeLineRef.current.remove();
-      routeLineRef.current = null;
-    }
-
-    if (selectedFacility) {
-      const uLat = userLocation.lat;
-      const uLng = userLocation.lng;
-      const dLat = selectedFacility.coordinates.lat;
-      const dLng = selectedFacility.coordinates.lng;
-
-      const waypoints = [
-        [uLat, uLng],
-        [(uLat * 2 + dLat) / 3, (uLng * 2 + dLng) / 3 + 0.003],
-        [(uLat + dLat * 2) / 3, (uLng + dLng * 2) / 3 - 0.002],
-        [dLat, dLng]
-      ];
-
-      routeLineRef.current = L.polyline(waypoints, {
-        color: '#0d9488',
-        weight: 4,
-        dashArray: '8, 8',
-        opacity: 0.9
-      }).addTo(map);
-    }
-  }, [userLocation, selectedFacility]);
-
-  // Geolocation trigger
+  // Geolocation detector
   const detectUserGPS = useCallback((isManual = false) => {
     if (!navigator.geolocation) {
       setGpsNotice('Location services not available on this browser.');
@@ -608,15 +364,12 @@ export default function NearbyCare({ report }) {
           label: isManual ? 'Live GPS Location' : 'Current Location'
         });
 
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
-        }
-
+        setMapMode('current-location');
         setIsLocating(false);
         setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m precision)`);
       },
       (err) => {
-        console.warn('[NearbyCare] Standard GPS error, trying high accuracy:', err.message);
+        console.warn('[NearbyCare] GPS standard scan failed, trying high accuracy:', err.message);
 
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -632,10 +385,7 @@ export default function NearbyCare({ report }) {
               label: 'Live GPS Location'
             });
 
-            if (mapInstanceRef.current) {
-              mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
-            }
-
+            setMapMode('current-location');
             setIsLocating(false);
             setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m)`);
           },
@@ -651,21 +401,24 @@ export default function NearbyCare({ report }) {
     );
   }, []);
 
-  const handlePresetMetroChange = (e) => {
-    const metro = PRESET_METROS.find((m) => m.id === e.target.value);
-    if (metro) {
+  const handleSelectFacility = useCallback((facility) => {
+    setSelectedFacilityId(facility.id);
+    setSelectedFacilityForMap(facility);
+    setMapMode('facility');
+  }, []);
+
+  const handlePresetLocalityChange = (e) => {
+    const loc = PRESET_LOCALITIES.find((l) => l.id === e.target.value);
+    if (loc) {
       setUserLocation({
-        lat: metro.lat,
-        lng: metro.lng,
+        lat: loc.lat,
+        lng: loc.lng,
         accuracy: 50,
         detected: true,
-        label: metro.name
+        label: loc.name
       });
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([metro.lat, metro.lng], 13, { duration: 1.2 });
-      }
-      setGpsNotice(`Centered on ${metro.name}`);
+      setMapMode('nearby');
+      setGpsNotice(`Centered on ${loc.name}`);
     }
   };
 
@@ -673,14 +426,14 @@ export default function NearbyCare({ report }) {
     <section className="page-wrap content-page nearby-portal-root" aria-labelledby="nearby-care-heading">
       {/* Header and Hero Overview */}
       <header className="page-intro page-intro-left" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#ecfdf5', borderRadius: '20px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '12px', fontWeight: 700, marginBottom: '8px' }}>
-          <Compass size={14} /> LIVE VETERINARY RADAR & PROXIMITY DISPATCH
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: '#ecfdf5', borderRadius: '20px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '12px', fontWeight: 700, marginBottom: '8px' }}>
+          <Compass size={14} /> OFFICIAL GOOGLE MAPS VETERINARY RADAR
         </div>
         <h1 id="nearby-care-heading" style={{ fontSize: '2.1rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 8px', letterSpacing: '-0.02em' }}>
-          Verified Veterinary Hospitals & Emergency Care
+          Real Google Maps Animal Care & Navigation
         </h1>
         <p style={{ color: '#475569', fontSize: '1rem', maxWidth: '720px', margin: 0, lineHeight: 1.5 }}>
-          Real-time distance calculation, 24/7 ICU casualty desks, and turn-by-turn Google Maps navigation centered directly on your location.
+          Real-time distance calculation, 24/7 ICU casualty desks, and official Google Maps turn-by-turn navigation centered directly on your location.
         </p>
       </header>
 
@@ -693,13 +446,13 @@ export default function NearbyCare({ report }) {
               width: '12px',
               height: '12px',
               borderRadius: '50%',
-              background: userLocation.detected ? '#10b981' : '#0284c7',
-              boxShadow: userLocation.detected ? '0 0 10px #10b981' : '0 0 10px #0284c7',
+              background: '#10b981',
+              boxShadow: '0 0 10px #10b981',
               display: 'inline-block',
               flexShrink: 0
             }} />
             <div>
-              <strong style={{ fontSize: '13.5px', color: '#0f172a', display: 'block', fontWeight: 700 }}>
+              <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block', fontWeight: 700 }}>
                 {userLocation.label}
               </strong>
               <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -708,12 +461,12 @@ export default function NearbyCare({ report }) {
             </div>
           </div>
 
-          {/* Quick Actions: Locate Me & Area Switcher */}
+          {/* Quick Actions: Locate Me & Locality Switcher */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <select
-              aria-label="Select city or region"
-              onChange={handlePresetMetroChange}
-              defaultValue="bangalore-south"
+              aria-label="Select locality or region"
+              onChange={handlePresetLocalityChange}
+              defaultValue="bangalore-ks-layout"
               style={{
                 minHeight: '40px',
                 padding: '6px 12px',
@@ -726,8 +479,8 @@ export default function NearbyCare({ report }) {
                 cursor: 'pointer'
               }}
             >
-              {PRESET_METROS.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+              {PRESET_LOCALITIES.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.name}</option>
               ))}
             </select>
 
@@ -757,7 +510,7 @@ export default function NearbyCare({ report }) {
           </div>
         </div>
 
-        {/* Search & Specialty Filter Input */}
+        {/* Search Input */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1 1 280px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -791,6 +544,107 @@ export default function NearbyCare({ report }) {
         </div>
       </div>
 
+      {/* Official Google Map Container */}
+      <div className="panel" style={{ padding: 0, overflow: 'hidden', borderRadius: '18px', border: '1px solid #cbd5e1', marginBottom: '24px', boxShadow: '0 10px 30px -8px rgba(0,0,0,0.08)' }}>
+        {/* Map Top Bar with Google Maps Controls & View Mode Toggles */}
+        <div style={{ padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Compass size={15} color="#0d9488" /> Real Google Maps:
+            </span>
+
+            {/* Mode Selector Buttons */}
+            <button
+              type="button"
+              onClick={() => setMapMode('current-location')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                border: '1px solid',
+                borderColor: mapMode === 'current-location' ? '#0284c7' : '#cbd5e1',
+                background: mapMode === 'current-location' ? '#0284c7' : '#ffffff',
+                color: mapMode === 'current-location' ? '#ffffff' : '#334155',
+                cursor: 'pointer'
+              }}
+            >
+              📍 My Location Pin
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMapMode('nearby')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                border: '1px solid',
+                borderColor: mapMode === 'nearby' ? '#0d9488' : '#cbd5e1',
+                background: mapMode === 'nearby' ? '#0d9488' : '#ffffff',
+                color: mapMode === 'nearby' ? '#ffffff' : '#334155',
+                cursor: 'pointer'
+              }}
+            >
+              🏥 Nearby Care Centers
+            </button>
+
+            {selectedFacilityForMap && (
+              <button
+                type="button"
+                onClick={() => setMapMode('facility')}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  border: '1px solid',
+                  borderColor: mapMode === 'facility' ? '#0f766e' : '#cbd5e1',
+                  background: mapMode === 'facility' ? '#0f766e' : '#ffffff',
+                  color: mapMode === 'facility' ? '#ffffff' : '#334155',
+                  cursor: 'pointer'
+                }}
+              >
+                🏥 {selectedFacilityForMap.name.slice(0, 26)}…
+              </button>
+            )}
+          </div>
+
+          <a
+            href={fullGoogleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              color: '#0d9488',
+              textDecoration: 'none'
+            }}
+          >
+            Open in Google Maps App <ExternalLink size={13} />
+          </a>
+        </div>
+
+        {/* Real Google Maps Iframe */}
+        <div style={{ height: '480px', width: '100%', position: 'relative', background: '#e2e8f0' }}>
+          <iframe
+            key={googleMapEmbedUrl}
+            title="Real Google Maps Care Locator"
+            width="100%"
+            height="100%"
+            style={{ border: 0, display: 'block' }}
+            loading="lazy"
+            allow="geolocation"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={googleMapEmbedUrl}
+          />
+        </div>
+      </div>
+
       {/* Category Filter Pills (All, Emergency, Hospitals, NGOs, Day Care) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
         <div role="tablist" aria-label="Facility Categories" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -808,7 +662,10 @@ export default function NearbyCare({ report }) {
                 role="tab"
                 type="button"
                 aria-selected={isActive}
-                onClick={() => setCategoryFilter(cat.id)}
+                onClick={() => {
+                  setCategoryFilter(cat.id);
+                  setMapMode('nearby');
+                }}
                 style={{
                   minHeight: '38px',
                   padding: '6px 14px',
@@ -830,142 +687,52 @@ export default function NearbyCare({ report }) {
         </div>
 
         <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
-          Showing <strong>{filteredFacilities.length}</strong> centers near you
+          Showing <strong>{filteredFacilities.length}</strong> facilities sorted by distance
         </span>
       </div>
 
-      {/* Main Split Layout: Interactive Leaflet Map + Facility Stream */}
-      <div className="nearby-portal-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(340px, 1fr)', gap: '20px', alignItems: 'start' }}>
-        
-        {/* Left Column: Interactive Map */}
-        <div className="panel" style={{ padding: 0, overflow: 'hidden', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'sticky', top: '80px', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.08)' }}>
-          {/* Map Top Bar with Layer Switcher */}
-          <div style={{ padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '12.5px', color: '#475569' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }} />
-              <span>Blue Beacon: <strong>Your Location</strong></span>
-            </div>
-
-            {/* Tile Layer Selector */}
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {Object.entries(TILE_LAYERS).map(([key, layer]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setActiveTileType(key)}
-                  style={{
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid',
-                    borderColor: activeTileType === key ? '#0d9488' : '#e2e8f0',
-                    background: activeTileType === key ? '#0d9488' : '#ffffff',
-                    color: activeTileType === key ? '#ffffff' : '#64748b',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {layer.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Leaflet Map DOM Element Container */}
-          <div style={{ height: '540px', width: '100%', position: 'relative' }}>
-            {mapError && (
-              <div style={{ position: 'absolute', inset: 0, background: '#f8fafc', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
-                <ShieldAlert size={36} color="#dc2626" style={{ marginBottom: '12px' }} />
-                <strong style={{ color: '#0f172a', fontSize: '15px' }}>Map tile network encountered an issue</strong>
-                <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 16px' }}>{mapError}</p>
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={() => window.location.reload()}
-                  style={{ minHeight: '38px', padding: '6px 14px', fontSize: '13px' }}
-                >
-                  <RefreshCw size={14} /> Reload Map
-                </button>
-              </div>
-            )}
-
-            <div
-              ref={mapContainerRef}
-              id="nearby-care-leaflet-map"
-              style={{ width: '100%', height: '100%' }}
-            />
-
-            {/* Floating Quick Action: Center on My Location */}
+      {/* Curated Clinical Facility Cards Feed */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+        {filteredFacilities.length === 0 ? (
+          <div className="panel" style={{ padding: '36px 20px', textAlign: 'center', color: '#64748b', gridColumn: '1 / -1' }}>
+            <Building2 size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>No facilities matched your search</h3>
+            <p style={{ fontSize: '13px', margin: '0 0 16px' }}>Try clearing the search query or selecting a broader category filter.</p>
             <button
               type="button"
-              onClick={() => {
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 1 });
-                }
-              }}
-              title="Center map on your location"
-              style={{
-                position: 'absolute',
-                right: '12px',
-                bottom: '12px',
-                zIndex: 400,
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontWeight: 700,
-                fontSize: '12.5px',
-                color: '#0284c7',
-                cursor: 'pointer'
-              }}
+              className="button button-secondary"
+              onClick={() => { setSearchQuery(''); setCategoryFilter('all'); }}
+              style={{ minHeight: '38px', padding: '6px 16px', fontSize: '13px' }}
             >
-              <LocateFixed size={15} /> Recenter on Me
+              Reset All Filters
             </button>
           </div>
-        </div>
+        ) : (
+          filteredFacilities.map((facility) => {
+            const isSelected = facility.id === selectedFacilityId;
+            const isEmergency = facility.type === 'emergency';
+            const isNgo = facility.type === 'ngo';
+            const isDaycare = facility.type === 'daycare';
 
-        {/* Right Column: Sleek Curated Facility Cards Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '596px', overflowY: 'auto', paddingRight: '4px' }}>
-          {filteredFacilities.length === 0 ? (
-            <div className="panel" style={{ padding: '36px 20px', textAlign: 'center', color: '#64748b' }}>
-              <Building2 size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>No facilities matched your search</h3>
-              <p style={{ fontSize: '13px', margin: '0 0 16px' }}>Try clearing the search query or selecting a broader category filter.</p>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => { setSearchQuery(''); setCategoryFilter('all'); }}
-                style={{ minHeight: '38px', padding: '6px 16px', fontSize: '13px' }}
+            return (
+              <article
+                key={facility.id}
+                onClick={() => handleSelectFacility(facility)}
+                className={`panel facility-curated-card ${isSelected ? 'selected' : ''}`}
+                style={{
+                  padding: '20px',
+                  borderRadius: '14px',
+                  border: isSelected ? '2px solid #0d9488' : '1px solid #e2e8f0',
+                  background: isSelected ? '#f0fdfa' : '#ffffff',
+                  boxShadow: isSelected ? '0 8px 20px -4px rgba(13, 148, 136, 0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
               >
-                Reset All Filters
-              </button>
-            </div>
-          ) : (
-            filteredFacilities.map((facility) => {
-              const isSelected = facility.id === selectedFacilityId;
-              const isEmergency = facility.type === 'emergency';
-              const isNgo = facility.type === 'ngo';
-              const isDaycare = facility.type === 'daycare';
-
-              return (
-                <article
-                  key={facility.id}
-                  onClick={() => handleSelectFacility(facility)}
-                  className={`panel facility-curated-card ${isSelected ? 'selected' : ''}`}
-                  style={{
-                    padding: '18px 20px',
-                    borderRadius: '14px',
-                    border: isSelected ? '2px solid #0d9488' : '1px solid #e2e8f0',
-                    background: isSelected ? '#f0fdfa' : '#ffffff',
-                    boxShadow: isSelected ? '0 8px 20px -4px rgba(13, 148, 136, 0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
+                <div>
                   {/* Top Meta Line: Category Badge, Rating, Distance */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1001,7 +768,7 @@ export default function NearbyCare({ report }) {
                   </div>
 
                   {/* Facility Title & Operating Hours */}
-                  <h3 style={{ fontSize: '15.5px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px', lineHeight: 1.35 }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px', lineHeight: 1.35 }}>
                     {facility.name}
                   </h3>
 
@@ -1024,82 +791,82 @@ export default function NearbyCare({ report }) {
                       </span>
                     ))}
                   </div>
+                </div>
 
-                  {/* Clean, Modern Action Buttons (No redundant identical blocks) */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-                    {/* Directions Button: Launches native turn-by-turn navigation */}
-                    <a
-                      href={getDirectionsUrl(facility.coordinates.lat, facility.coordinates.lng)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        padding: '8px 14px',
-                        fontSize: '12.5px',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        background: '#0d9488',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 2px 4px rgba(13, 148, 136, 0.2)'
-                      }}
-                    >
-                      <Navigation size={14} /> Navigate ({facility.distanceKm} km)
-                    </a>
+                {/* Clean, Modern Action Buttons */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                  {/* Google Maps Turn-by-Turn GPS Navigation */}
+                  <a
+                    href={getDirectionsUrl(facility)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      background: '#0d9488',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 4px rgba(13, 148, 136, 0.2)'
+                    }}
+                  >
+                    <Navigation size={14} /> Navigate ({facility.distanceKm} km)
+                  </a>
 
-                    {/* Direct Telephone Helpline Call */}
-                    <a
-                      href={`tel:${(facility.helpline || facility.phone).replace(/\s+/g, '')}`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#0f172a',
-                        background: '#f8fafc',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                    >
-                      <Phone size={13} color="#0d9488" /> {facility.helpline || facility.phone}
-                    </a>
+                  {/* Direct Phone Helpline Call */}
+                  <a
+                    href={`tel:${(facility.helpline || facility.phone).replace(/\s+/g, '')}`}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: '#0f172a',
+                      background: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <Phone size={13} color="#0d9488" /> {facility.helpline || facility.phone}
+                  </a>
 
-                    {/* Focus on Leaflet Map Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectFacility(facility);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: isSelected ? '#0d9488' : '#64748b',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        marginLeft: 'auto'
-                      }}
-                    >
-                      <MapPin size={13} /> {isSelected ? 'Viewing on map' : 'Show on map'}
-                    </button>
-                  </div>
-                </article>
-              );
-            })
-          )}
-        </div>
+                  {/* Focus on Real Google Map Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectFacility(facility);
+                    }}
+                    style={{
+                      padding: '8px 10px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: isSelected && mapMode === 'facility' ? '#0d9488' : '#64748b',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    <Compass size={13} /> {isSelected && mapMode === 'facility' ? 'Viewing on map' : 'View on map'}
+                  </button>
+                </div>
+              </article>
+            );
+          })
+        )}
       </div>
 
       {/* Case report email draft if user has report in state */}
@@ -1123,11 +890,11 @@ export default function NearbyCare({ report }) {
         </div>
       )}
 
-      {/* Professional Clinical Notice */}
+      {/* Clinical Notice */}
       <footer style={{ marginTop: '24px', padding: '14px 20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '12.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <Stethoscope size={16} color="var(--brand)" style={{ flexShrink: 0 }} />
         <span>
-          Distances and drive times are calculated live from your device's GPS coordinates using the Haversine projection. In acute respiratory distress, heavy bleeding, or poisoning, call the hospital casualty helpline while en route.
+          Facility data and directions are powered live by Google Maps. In acute trauma, heavy bleeding, or poisoning, contact the hospital casualty desk while en route.
         </span>
       </footer>
     </section>
