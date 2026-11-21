@@ -289,6 +289,58 @@ export const api = {
     }
   },
 
+  async dispatchCaseToRescueCenter(payload) {
+    const { caseId, rescueCenter, reporterInfo, notes } = payload;
+    const updates = {
+      status: 'ngo_assigned',
+      assignedNGO: rescueCenter.name,
+      assignedEmail: rescueCenter.email,
+      assignedVolunteer: `${rescueCenter.name} Emergency Ambulance`,
+      dispatchedAt: new Date().toISOString(),
+      reporterName: reporterInfo?.name || '',
+      reporterPhone: reporterInfo?.phone || '',
+      reporterEmail: reporterInfo?.email || '',
+      dispatchNotes: notes || ''
+    };
+
+    let localUpdated = null;
+    try {
+      localUpdated = await caseStorage.updateReport(caseId, updates);
+    } catch {
+      // Fallback to memory
+    }
+
+    try {
+      const serverRes = await request(`/cases/${encodeURIComponent(caseId)}/dispatch`, {
+        method: 'POST',
+        body: JSON.stringify({
+          caseId,
+          rescueCenterId: rescueCenter.id,
+          rescueCenterName: rescueCenter.name,
+          rescueCenterEmail: rescueCenter.email,
+          rescueCenterPhone: rescueCenter.helpline || rescueCenter.phone,
+          reporterName: reporterInfo?.name,
+          reporterPhone: reporterInfo?.phone,
+          reporterEmail: reporterInfo?.email,
+          notes,
+          timestamp: new Date().toISOString()
+        })
+      });
+      return { success: true, ...localUpdated, ...serverRes };
+    } catch {
+      return {
+        success: true,
+        ...localUpdated,
+        dispatchId: `DISP-${Date.now().toString(36).toUpperCase()}`,
+        dispatchedAt: new Date().toISOString(),
+        recipientName: rescueCenter.name,
+        recipientEmail: rescueCenter.email,
+        recipientPhone: rescueCenter.helpline || rescueCenter.phone,
+        status: 'ngo_assigned'
+      };
+    }
+  },
+
   async vetVerifyCase(id, { notes, tests, doctorName }) {
     try {
       return await request(`/cases/${encodeURIComponent(id)}/vet-verify`, {

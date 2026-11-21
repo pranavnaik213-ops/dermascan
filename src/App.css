@@ -982,3 +982,229 @@ input[type="submit"],
   padding: 4px !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
 }
+
+/* ==========================================================================
+   POST-REPORTING RESCUE DISPATCH & OFFICIAL EMAIL TRANSMISSION
+   ========================================================================== */
+.rescue-dispatch-flow {
+  max-width: 880px;
+  margin: 24px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rescue-case-banner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rescue-case-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.rescue-case-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+}
+
+.rescue-step-header {
+  margin-bottom: 8px;
+}
+
+.rescue-step-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 4px 0 6px;
+}
+
+.rescue-step-header p {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.rescue-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .rescue-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rescue-option-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  text-align: left;
+}
+
+.rescue-option-card:hover {
+  border-color: #0d9488;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.08);
+}
+
+.rescue-option-card.is-selected {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.12);
+}
+
+.rescue-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rescue-card-name {
+  font-size: 15.5px;
+  font-weight: 750;
+  color: #0f172a;
+  margin: 0 0 3px;
+  line-height: 1.3;
+}
+
+.rescue-card-dist {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f766e;
+  background: #ccfbf1;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.rescue-mail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.rescue-option-card.is-selected .rescue-mail-badge {
+  background: #e6fffa;
+  border-color: #99f6e4;
+  color: #115e59;
+}
+
+.dispatch-details-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dispatch-details-title {
+  font-size: 16px;
+  font-weight: 750;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.dispatch-inputs-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.dispatch-confirmed-wrap {
+  max-width: 680px;
+  margin: 24px auto 0;
+  text-align: center;
+  background: #ffffff;
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  padding: 36px 28px;
+  box-shadow: 0 12px 32px rgba(22, 163, 74, 0.1);
+}
+
+.dispatch-success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.2);
+}
+
+.dispatch-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 22px 0;
+  text-align: left;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.dispatch-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.dispatch-meta-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dispatch-meta-value {
+  color: #0f172a;
+  font-weight: 700;
+}
