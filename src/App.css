@@ -913,3 +913,44 @@ input[type="submit"],
     text-align: center !important;
   }
 }
+
+
+/* ==========================================================================
+   LIVE GPS RADAR & CLINICAL NEARBY CARE STYLING
+   ========================================================================== */
+
+@keyframes userBeaconRadar {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.leaflet-user-beacon,
+.leaflet-facility-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.facility-curated-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1 !important;
+}
+
+.facility-curated-card.selected {
+  border-color: #0d9488 !important;
+  background: #f0fdfa !important;
+}
+
+@media (max-width: 960px) {
+  .nearby-portal-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .nearby-portal-layout > div:first-child {
+    position: static !important;
+  }
+}
