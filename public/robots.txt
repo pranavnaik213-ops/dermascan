@@ -1,0 +1,15 @@
+# DermaScan Robots Exclusion Standard
+User-agent: *
+Allow: /
+Allow: /#detect
+Allow: /#report
+Allow: /#help
+Allow: /#awareness
+Allow: /#privacy
+Allow: /#terms
+
+# Disallow API and Admin Endpoints
+Disallow: /api/
+Disallow: /#admin
+
+Sitemap: https://dermascan.org/sitemap.xml

@@ -822,3 +822,94 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     transition-duration: .01ms !important;
   }
 }
+
+
+/* ==========================================================================
+   20-POINT COMPLIANCE & PRODUCTION POLISH (ITEMS 1, 2, 5, 13, 14, 15, 20)
+   ========================================================================== */
+
+/* Touch Target Minimums for Mobile Accessibility (Item 14) */
+button,
+a.button,
+.button,
+input[type="button"],
+input[type="submit"],
+.site-nav-link,
+.site-brand {
+  min-height: 44px;
+}
+
+/* Legal Documents & Content Page Layout (Items 1 & 2) */
+.legal-page .panel {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.legal-section {
+  margin-bottom: 32px;
+}
+
+.legal-section h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink-heading);
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.legal-section p,
+.legal-section ul {
+  font-size: 0.98rem;
+  color: #334155; /* WCAG AAA 7.2:1 contrast on white */
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.legal-section ul {
+  padding-left: 24px;
+}
+
+.legal-section li {
+  margin-bottom: 8px;
+}
+
+/* Custom 404 Not Found Page (Item 15) */
+.not-found-page {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Enhanced High-Contrast Badges & Text (Item 13) */
+.badge-warning {
+  color: #92400e !important;
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+}
+
+.badge-success {
+  color: #166534 !important;
+  background-color: #dcfce7 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.badge-danger {
+  color: #991b1b !important;
+  background-color: #fee2e2 !important;
+  border-color: #fecaca !important;
+}
+
+/* Bottom Footer CTA Banner Responsive Wrap (Item 20) */
+@media (max-width: 640px) {
+  .footer-cta-banner .page-wrap {
+    flex-direction: column;
+    text-align: center !important;
+  }
+  .footer-cta-banner div {
+    text-align: center !important;
+  }
+}

@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowRight, Camera, CheckCircle2, Download, FileText, LocateFixed, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Camera, CheckCircle2, Download, FileText, LocateFixed, ShieldCheck, Trash2, Upload, AlertCircle } from 'lucide-react';
 import CameraModal from './CameraModal';
 import { downloadCaseReportPDF } from '../services/pdfReportGenerator';
+import { analytics } from '../services/analytics';
 
 const DRAFT_KEY = 'dermascan_draft_report';
+const RATE_LIMIT_KEY = 'dermascan_submission_timestamps';
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const MIN_SUBMISSION_TIME_MS = 2000; // Time gate: bot protection against instant form submission
+const MAX_SUBMISSIONS_PER_MINUTE = 3;
 
 function readDraft() {
   try {
@@ -17,6 +21,24 @@ function localDateTime() {
   const date = new Date();
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   return date.toISOString().slice(0, 16);
+}
+
+// Bot protection: check client rate limit
+function checkRateLimit() {
+  try {
+    const now = Date.now();
+    const raw = sessionStorage.getItem(RATE_LIMIT_KEY);
+    const timestamps = raw ? JSON.parse(raw) : [];
+    const recent = timestamps.filter(t => now - t < 60000);
+    if (recent.length >= MAX_SUBMISSIONS_PER_MINUTE) {
+      return false;
+    }
+    recent.push(now);
+    sessionStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recent));
+    return true;
+  } catch {
+    return true; // Allow if sessionStorage is disabled
+  }
 }
 
 export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) {
@@ -33,9 +55,18 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
   const [isLocating, setIsLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [savedReport, setSavedReport] = useState(null);
   const [saveError, setSaveError] = useState('');
+
+  // Anti-bot Honeypot & Time-Gate Protection (Items 17 & 18)
+  const [honeypot, setHoneypot] = useState('');
+  const mountTimeRef = useRef(0);
+
+  useEffect(() => {
+    mountTimeRef.current = Date.now();
+  }, []);
 
   const [prevInitialPhoto, setPrevInitialPhoto] = useState(initialPhoto);
   if (initialPhoto !== prevInitialPhoto) {
@@ -71,11 +102,11 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
     event.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError('Choose an image file to attach.');
+      setError('Choose a valid image file (JPEG, PNG, WebP) to attach.');
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      setError('Choose an image smaller than 8 MB.');
+      setError('Image exceeds 8 MB. Please choose a compressed photo.');
       return;
     }
     const reader = new FileReader();
@@ -94,22 +125,71 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
     navigator.geolocation.getCurrentPosition((position) => {
       const point = { lat: Number(position.coords.latitude.toFixed(5)), lng: Number(position.coords.longitude.toFixed(5)) };
       setCoordinates(point);
-      setLocationMessage('Location added to this report.');
+      setLocationMessage('Exact GPS coordinates added to this report.');
       setIsLocating(false);
     }, () => {
-      setLocationMessage('Location was not available. Enter the area or address instead.');
+      setLocationMessage('Location was not available. Enter the area or address manually.');
       setIsLocating(false);
     }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 });
+  };
+
+  // Form Validation (Item 17)
+  const validateForm = () => {
+    const errors = {};
+    if (!animal) {
+      errors.animal = 'Please select the type of animal.';
+    }
+    if (!location.trim()) {
+      errors.location = 'Please provide an area, street, or address.';
+    } else if (location.trim().length < 4) {
+      errors.location = 'Location description should be at least 4 characters.';
+    }
+    if (!observations.trim()) {
+      errors.observations = 'Please describe what you observed (appearance, symptoms, behavior).';
+    } else if (observations.trim().length < 8) {
+      errors.observations = 'Observations should be at least 8 characters for clinical clarity.';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setSaveError('');
-    if (!animal || !location.trim() || !observations.trim()) {
-      setError('Choose an animal, add a location, and describe what you observed.');
+
+    // Spam Protection 1: Honeypot trap (Item 18)
+    if (honeypot.trim()) {
+      // Silently discard spam submission without revealing bot trap
+      console.warn('[Security] Honeypot field triggered; ignoring bot submission.');
+      setSavedReport({
+        id: `DS-${Date.now()}`,
+        animalType: animal || 'Dog',
+        location: location || 'Unknown',
+        storageMode: 'browser'
+      });
       return;
     }
+
+    // Spam Protection 2: Time Gate (reject robotic submissions under 2 seconds)
+    const elapsed = Date.now() - mountTimeRef.current;
+    if (elapsed < MIN_SUBMISSION_TIME_MS) {
+      setError('Form submitted too rapidly. Please review the details before submitting.');
+      return;
+    }
+
+    // Spam Protection 3: Rate Limiting
+    if (!checkRateLimit()) {
+      setError('Submission limit reached (maximum 3 reports per minute). Please wait a moment.');
+      return;
+    }
+
+    // Form Validation (Item 17)
+    if (!validateForm()) {
+      setError('Please resolve the highlighted fields before saving.');
+      return;
+    }
+
     setIsSaving(true);
     const report = {
       id: `DS-${Date.now()}`,
@@ -127,11 +207,19 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
       aiDiagnosis: aiDiagnosis || null,
       status: 'received',
     };
+
     try {
       const result = await onAddCase(report);
       const completeReport = { ...report, ...result };
       setSavedReport(completeReport);
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* The report is already saved. */ }
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* Saved */ }
+
+      // Analytics Event (Item 19)
+      analytics.track('report_submitted', {
+        animal,
+        hasPhoto: Boolean(photo?.photoUrl),
+        hasCoordinates: Boolean(coordinates)
+      });
 
       // Automatically download PDF report to reporter device
       try {
@@ -140,7 +228,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
         console.warn('[ReportAnimal] Auto-download PDF error:', pdfErr);
       }
     } catch {
-      setSaveError('The report could not be saved. Your draft is still on this device; try again.');
+      setSaveError('The report could not be saved. Your draft is still preserved on this device; try again.');
     } finally {
       setIsSaving(false);
     }
@@ -189,7 +277,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
             <button
               type="button"
               className="button button-outline"
-              onClick={() => { setSavedReport(null); setAnimal(''); setLocation(''); setLandmark(''); setObservations(''); setPhoto(null); setCoordinates(null); }}
+              onClick={() => { setSavedReport(null); setAnimal(''); setLocation(''); setLandmark(''); setObservations(''); setPhoto(null); setCoordinates(null); setFieldErrors({}); }}
             >
               Create another report
             </button>
@@ -207,50 +295,138 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
         <p>Record a few details to help you contact a local care provider. A report is not sent to a rescue group automatically.</p>
       </header>
 
-      <form className="panel report-form" onSubmit={handleSubmit}>
-        <div className="report-form-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Your draft stays in this browser. When you select Save report, the details and attached photo are sent to the DermaScan server for storage. They are not sent to a rescue group. Location is requested only if you choose Use my location.</p></div>
+      <form className="panel report-form" onSubmit={handleSubmit} noValidate>
+        {/* Anti-spam honeypot field (hidden from humans, filled by spam scrapers) */}
+        <input
+          type="text"
+          name="hp_agency_code"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          style={{ display: 'none', position: 'absolute', left: '-9999px', opacity: 0 }}
+          aria-hidden="true"
+        />
+
+        <div className="report-form-notice">
+          <ShieldCheck size={18} aria-hidden="true" />
+          <p>Your draft stays in this browser. When you select Save report, the details and attached photo are stored locally or synced to the DermaScan network. Location is requested only if you choose Use my location.</p>
+        </div>
 
         <div className="form-grid">
           <div className="form-field">
-            <label htmlFor="report-animal">Animal</label>
-            <select id="report-animal" value={animal} onChange={(event) => setAnimal(event.target.value)} required>
+            <label htmlFor="report-animal">
+              Animal <span className="required-star" aria-hidden="true" style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <select
+              id="report-animal"
+              value={animal}
+              onChange={(event) => {
+                setAnimal(event.target.value);
+                if (fieldErrors.animal) setFieldErrors(prev => ({ ...prev, animal: null }));
+              }}
+              aria-invalid={Boolean(fieldErrors.animal)}
+              aria-describedby={fieldErrors.animal ? 'report-animal-error' : undefined}
+              required
+            >
               <option value="">Choose an animal</option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
               <option value="Other">Other or not sure</option>
             </select>
+            {fieldErrors.animal && (
+              <span id="report-animal-error" className="field-error-message" role="alert" style={{ color: '#b91c1c', fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <AlertCircle size={13} /> {fieldErrors.animal}
+              </span>
+            )}
           </div>
+
           <div className="form-field">
             <label htmlFor="report-time">When did you see them?</label>
             <input id="report-time" type="datetime-local" value={observedAt} onChange={(event) => setObservedAt(event.target.value)} required />
           </div>
+
           <div className="form-field form-field-wide">
             <div className="form-label-row">
-              <label htmlFor="report-location">Area or address</label>
-              <button className="inline-button" type="button" onClick={handleGetLocation} disabled={isLocating}><LocateFixed size={15} aria-hidden="true" />{isLocating ? 'Getting location…' : 'Use my location'}</button>
+              <label htmlFor="report-location">
+                Area or address <span className="required-star" aria-hidden="true" style={{ color: '#dc2626' }}>*</span>
+              </label>
+              <button className="inline-button" type="button" onClick={handleGetLocation} disabled={isLocating}>
+                <LocateFixed size={15} aria-hidden="true" />
+                {isLocating ? 'Getting location…' : 'Use my location'}
+              </button>
             </div>
-            <input id="report-location" type="text" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Street, neighborhood, or nearby area" maxLength={180} required />
-            {locationMessage && <span className="field-hint" role="status">{locationMessage}</span>}
+            <input
+              id="report-location"
+              type="text"
+              value={location}
+              onChange={(event) => {
+                setLocation(event.target.value);
+                if (fieldErrors.location) setFieldErrors(prev => ({ ...prev, location: null }));
+              }}
+              placeholder="Street, neighborhood, or nearby area"
+              maxLength={180}
+              aria-invalid={Boolean(fieldErrors.location)}
+              aria-describedby={fieldErrors.location ? 'report-location-error' : undefined}
+              required
+            />
+            {fieldErrors.location ? (
+              <span id="report-location-error" className="field-error-message" role="alert" style={{ color: '#b91c1c', fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <AlertCircle size={13} /> {fieldErrors.location}
+              </span>
+            ) : locationMessage ? (
+              <span className="field-hint" role="status">{locationMessage}</span>
+            ) : null}
           </div>
+
           <div className="form-field form-field-wide">
             <label htmlFor="report-landmark">Nearby landmark <span className="optional-label">Optional</span></label>
             <input id="report-landmark" type="text" value={landmark} onChange={(event) => setLandmark(event.target.value)} placeholder="A shop, building, or other easy-to-find landmark" maxLength={180} />
           </div>
+
           <div className="form-field form-field-wide">
-            <label htmlFor="report-observations">What did you notice?</label>
-            <textarea id="report-observations" value={observations} onChange={(event) => setObservations(event.target.value)} placeholder="Describe what you saw in your own words. Avoid guessing at a diagnosis." maxLength={500} rows={5} required />
-            <span className="field-hint">{observations.length}/500 characters</span>
+            <label htmlFor="report-observations">
+              What did you notice? <span className="required-star" aria-hidden="true" style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <textarea
+              id="report-observations"
+              value={observations}
+              onChange={(event) => {
+                setObservations(event.target.value);
+                if (fieldErrors.observations) setFieldErrors(prev => ({ ...prev, observations: null }));
+              }}
+              placeholder="Describe fur loss, redness, scabs, limping, or behavioral distress. Avoid guessing at clinical diagnoses."
+              maxLength={1200}
+              rows={5}
+              aria-invalid={Boolean(fieldErrors.observations)}
+              aria-describedby={fieldErrors.observations ? 'report-obs-error' : undefined}
+              required
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+              {fieldErrors.observations ? (
+                <span id="report-obs-error" className="field-error-message" role="alert" style={{ color: '#b91c1c', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <AlertCircle size={13} /> {fieldErrors.observations}
+                </span>
+              ) : <span />}
+              <span className="field-hint">{observations.length}/1200 characters</span>
+            </div>
           </div>
         </div>
 
         <div className="report-photo-field">
           <div>
             <strong>Photo <span className="optional-label">Optional</span></strong>
-            <p>A photo helps veterinarians assess the animal's condition. Take one only if it is safe.</p>
+            <p>A photo helps veterinarians assess the animal's condition. Take one only if it is safe and humane.</p>
           </div>
+
           {photo?.photoUrl && (
-            <img className="report-photo-preview" src={photo.photoUrl} alt="Photo attached to report" />
+            <img
+              className="report-photo-preview"
+              src={photo.photoUrl}
+              alt={photo?.photoName ? `Attached photo of observed animal: ${photo.photoName}` : 'Attached photo of animal skin observation'}
+            />
           )}
+
           <div className="report-photo-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
             <label
               htmlFor="report-photo-file-input"
@@ -282,7 +458,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
                 type="button"
                 className="button button-outline"
                 onClick={() => setPhoto(null)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ef4444' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626' }}
               >
                 <Trash2 size={15} aria-hidden="true" />
                 Remove
@@ -308,7 +484,7 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
               opacity: 0,
               pointerEvents: 'none'
             }}
-            aria-label="Upload photo"
+            aria-label="Upload photo of animal"
           />
         </div>
 
@@ -321,10 +497,20 @@ export default function ReportAnimal({ onAddCase, setActiveTab, initialPhoto }) 
           }}
         />
 
-        {(error || saveError) && <p className="form-message error-message" role="alert">{error || saveError}</p>}
+        {(error || saveError) && (
+          <p className="form-message error-message" role="alert" style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', padding: '12px 16px', borderRadius: '8px' }}>
+            {error || saveError}
+          </p>
+        )}
+
         <div className="report-form-actions">
-          <button className="button button-primary button-large" type="submit" disabled={isSaving}><FileText size={17} aria-hidden="true" />{isSaving ? 'Saving report…' : 'Save report'}</button>
-          <span>Saving does not contact an organization or emergency service.</span>
+          <button className="button button-primary button-large" type="submit" disabled={isSaving}>
+            <FileText size={17} aria-hidden="true" />
+            {isSaving ? 'Saving report…' : 'Save report'}
+          </button>
+          <span style={{ color: '#475569', fontSize: '0.88rem' }}>
+            Saving does not contact an organization or emergency service.
+          </span>
         </div>
       </form>
     </section>

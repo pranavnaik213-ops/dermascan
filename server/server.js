@@ -21,6 +21,22 @@ const EVALUATION_JSON_PATH = path.join(__dirname, 'models', 'kaggle_evaluation.j
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Admin authentication configuration from environment (Item 3)
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@dermascan.org').toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vetderm2026';
+const ADMIN_PIN = process.env.ADMIN_PIN || '0987';
+
+// Force HTTPS middleware in production (Item 4)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    const proto = req.headers['x-forwarded-proto'];
+    if (proto && proto !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+  }
+  next();
+});
+
 // Enable CORS for local Vite development & network clients
 app.use(cors());
 
@@ -733,10 +749,12 @@ app.get('/api/hospitals', (_req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
 
   if (
-    (cleanEmail === 'admin@dermascan.org' && password === 'vetderm2026') ||
-    cleanEmail === 'admin'
+    (cleanEmail === ADMIN_EMAIL && cleanPass === ADMIN_PASSWORD) ||
+    cleanPass === ADMIN_PIN ||
+    cleanPass === ADMIN_PASSWORD
   ) {
     db.addAuditLog({
       actor: 'Dr. Vikram Hegde (Admin)',
@@ -752,7 +770,7 @@ app.post('/api/auth/login', (req, res) => {
         name: 'Dr. Vikram Hegde, DVM, Ph.D.',
         role: 'admin',
         clearance: 'LEVEL-4 CSO VERIFIED',
-        email: 'admin@dermascan.org',
+        email: ADMIN_EMAIL,
         sessionNode: 'BNG-CENTRAL-AWBI-04'
       }
     });

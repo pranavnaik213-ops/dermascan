@@ -47,6 +47,52 @@ export default function Hero({ setActiveTab }) {
             <ShieldCheck size={18} aria-hidden="true" />
             <span>AI photo review is a decision-support aid, not a veterinary prescription. For severe bleeding, trauma, or respiratory distress, contact emergency veterinary services immediately.</span>
           </div>
+
+          <div className="home-primary-cta-group" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '24px' }}>
+            <button
+              type="button"
+              className="button button-primary button-large hero-scan-cta"
+              onClick={() => setActiveTab('detect')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '14px 28px',
+                fontSize: '1.05rem',
+                fontWeight: 700,
+                borderRadius: '14px',
+                boxShadow: '0 10px 25px -5px rgba(13, 148, 136, 0.4)',
+                minHeight: '48px',
+                minWidth: '44px',
+                cursor: 'pointer'
+              }}
+            >
+              <Camera size={20} aria-hidden="true" />
+              <span>Start AI Skin Scan</span>
+              <ArrowRight size={18} aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              className="button button-secondary hero-report-cta"
+              onClick={() => setActiveTab('report')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '14px 22px',
+                fontSize: '1rem',
+                fontWeight: 600,
+                borderRadius: '14px',
+                minHeight: '48px',
+                minWidth: '44px',
+                cursor: 'pointer'
+              }}
+            >
+              <ClipboardList size={18} aria-hidden="true" />
+              <span>Report Injured Animal</span>
+            </button>
+          </div>
         </div>
 
         <div className="home-illustration-wrap" aria-hidden="true">

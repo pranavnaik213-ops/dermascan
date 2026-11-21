@@ -1,0 +1,21 @@
+{
+  "name": "DermaScan — Veterinary AI Skin Diagnosis & Animal Rescue",
+  "short_name": "DermaScan",
+  "description": "On-device AI skin screening and community care network for animals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 256x256 512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -21,8 +21,25 @@ import {
 } from 'lucide-react';
 import { caseStorage } from '../services/caseStorage';
 import { downloadCaseReportPDF } from '../services/pdfReportGenerator';
+import { api } from '../services/api';
 
-const ADMIN_PASSWORD = '0987';
+// Precomputed salted SHA-256 hashes (zero plaintext passwords on frontend)
+const ADMIN_PASSWORD_HASH = '403e9106c4ca58f1cbc5a2f5255bec95f6d346f58b16b06c25d796be0c069a6f';
+const ADMIN_VET_HASH = '7aae9e4c5e71150e33f3e442437cfe2003dd17235ba1859126a11a30de265b4b';
+
+async function verifySaltedAdminHash(pass) {
+  try {
+    const enc = new TextEncoder();
+    const data = enc.encode(pass + ':dermascan_admin_salt');
+    const hashBuf = await crypto.subtle.digest('SHA-256', data);
+    const hashArr = Array.from(new Uint8Array(hashBuf));
+    const hex = hashArr.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hex === ADMIN_PASSWORD_HASH || hex === ADMIN_VET_HASH;
+  } catch {
+    return false;
+  }
+}
+
 const AUTH_KEY = 'dermascan_admin_auth_v3';
 
 function safeStorageGet(key) {
@@ -47,7 +64,7 @@ function safeStorageRemove(key) {
 
 const STATUS_CONFIG = {
   received: { label: 'Received (New)', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
-  under_review: { label: 'Under Review', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  under_review: { label: 'Under Review', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
   dispatched: { label: 'Dispatched / In Care', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
   resolved: { label: 'Resolved', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
 };
@@ -117,22 +134,35 @@ export default function AdminDashboard({ setActiveTab }) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [inspectingReport]);
 
-  // Handle Login with password 0987
-  const handleLogin = (e) => {
+  // Handle Login via backend API with offline salted-hash fallback
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
     setIsLoggingIn(true);
 
     const passTrim = loginPassword.trim();
+    const emailTrim = loginEmail.trim().toLowerCase() || 'admin@dermascan.org';
 
-    if (passTrim === ADMIN_PASSWORD) {
-      safeStorageSet(AUTH_KEY, 'true');
-      setIsAuthenticated(true);
-      setIsLoggingIn(false);
-    } else {
-      setIsLoggingIn(false);
-      setLoginError('Invalid password. Access restricted to administrator.');
+    try {
+      const res = await api.loginAdmin(emailTrim, passTrim);
+      if (res && res.success) {
+        safeStorageSet(AUTH_KEY, 'true');
+        setIsAuthenticated(true);
+        setIsLoggingIn(false);
+        return;
+      }
+    } catch {
+      const valid = await verifySaltedAdminHash(passTrim);
+      if (valid) {
+        safeStorageSet(AUTH_KEY, 'true');
+        setIsAuthenticated(true);
+        setIsLoggingIn(false);
+        return;
+      }
     }
+
+    setIsLoggingIn(false);
+    setLoginError('Invalid password or credentials. Access restricted to administrator.');
   };
 
   // Handle Logout
@@ -454,9 +484,9 @@ export default function AdminDashboard({ setActiveTab }) {
           <span style={{ fontSize: '11px', color: '#64748b' }}>Awaiting initial review</span>
         </div>
 
-        <div className="panel" style={{ padding: '16px', borderRadius: '10px', borderLeft: '4px solid #d97706' }}>
-          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#d97706', textTransform: 'uppercase' }}>In Progress / Review</span>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#d97706', margin: '4px 0 2px' }}>{underReviewCount}</div>
+        <div className="panel" style={{ padding: '16px', borderRadius: '10px', borderLeft: '4px solid #b45309' }}>
+          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase' }}>In Progress / Review</span>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#92400e', margin: '4px 0 2px' }}>{underReviewCount}</div>
           <span style={{ fontSize: '11px', color: '#64748b' }}>Assigned to care / rescue</span>
         </div>
 
