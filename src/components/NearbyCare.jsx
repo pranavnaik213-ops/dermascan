@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from 'react-leaflet';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Building2,
   CheckCircle2,
@@ -12,6 +12,7 @@ import {
   MapPin,
   Navigation,
   Phone,
+  RefreshCw,
   Search,
   ShieldAlert,
   Star,
@@ -20,45 +21,16 @@ import {
 } from 'lucide-react';
 import { calculateDistanceKm } from '../data/mockData';
 
-// Leaflet Map Resizer: Invalidates container dimensions to prevent tile cutoff
-function MapResizer({ activeTab }) {
-  const map = useMap();
-  useEffect(() => {
-    map.invalidateSize();
-    const timers = [
-      setTimeout(() => map.invalidateSize(), 80),
-      setTimeout(() => map.invalidateSize(), 250),
-      setTimeout(() => map.invalidateSize(), 500),
-      setTimeout(() => map.invalidateSize(), 1000)
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [map, activeTab]);
-  return null;
-}
-
-// Controller to smoothly pan & fly to user location or selected clinic
-function MapViewController({ center, zoom, bounds }) {
-  const map = useMap();
-  useEffect(() => {
-    if (bounds && bounds.length >= 2) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
-    } else if (center) {
-      map.flyTo(center, zoom || 13, { duration: 1.2 });
-    }
-  }, [center, zoom, bounds, map]);
-  return null;
-}
-
 // User Live Location Radar Beacon Marker
 const createUserMarkerIcon = () => {
   return L.divIcon({
     className: 'leaflet-user-beacon',
     html: `
-      <div style="position: relative; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;">
+      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
         <div style="
           position: absolute;
-          width: 38px;
-          height: 38px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: rgba(2, 132, 199, 0.25);
           border: 2px solid #0284c7;
@@ -70,14 +42,14 @@ const createUserMarkerIcon = () => {
           border-radius: 50%;
           background: #0284c7;
           border: 3px solid #ffffff;
-          box-shadow: 0 0 10px rgba(2, 132, 199, 0.8);
+          box-shadow: 0 0 12px rgba(2, 132, 199, 0.9);
           position: relative;
           z-index: 2;
         "></div>
       </div>
     `,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
   });
 };
 
@@ -100,7 +72,7 @@ const createFacilityMarkerIcon = (type, isSelected) => {
     emoji = '🏠';
   }
 
-  const size = isSelected ? 38 : 30;
+  const size = isSelected ? 40 : 32;
   return L.divIcon({
     className: 'leaflet-facility-marker',
     html: `
@@ -110,7 +82,7 @@ const createFacilityMarkerIcon = (type, isSelected) => {
         height: ${size}px;
         border-radius: 10px;
         border: 2.5px solid #ffffff;
-        box-shadow: ${isSelected ? `0 0 18px ${bg}, 0 6px 12px rgba(0,0,0,0.3)` : '0 3px 8px rgba(0,0,0,0.22)'};
+        box-shadow: ${isSelected ? `0 0 18px ${bg}, 0 6px 12px rgba(0,0,0,0.3)` : '0 3px 8px rgba(0,0,0,0.25)'};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -127,7 +99,7 @@ const createFacilityMarkerIcon = (type, isSelected) => {
   });
 };
 
-// Verified Facilities Dataset (Spanning South, North, East, West & Central sectors)
+// Verified Facilities Dataset (Spanning South, North, East, West & Central Bangalore)
 const ALL_FACILITIES = [
   {
     id: 'cessna-kanakapura',
@@ -312,17 +284,45 @@ const ALL_FACILITIES = [
 ];
 
 const PRESET_METROS = [
-  { id: 'bangalore-south', name: 'Bengaluru (South / KS Layout)', lat: 12.9060, lng: 77.5610 },
+  { id: 'bangalore-south', name: 'Kumaraswamy Layout / Kanakapura Rd', lat: 12.9060, lng: 77.5610 },
   { id: 'bangalore-central', name: 'Bengaluru (Central / MG Road)', lat: 12.9716, lng: 77.5946 },
-  { id: 'bangalore-north', name: 'Bengaluru (North / Hebbal)', lat: 13.0298, lng: 77.5898 },
+  { id: 'bangalore-north', name: 'Hebbal & Bellary Road', lat: 13.0298, lng: 77.5898 },
+  { id: 'bangalore-east', name: 'Indiranagar & Domlur', lat: 12.9612, lng: 77.6432 },
   { id: 'mumbai', name: 'Mumbai (Bandra / Western)', lat: 19.0596, lng: 72.8295 },
   { id: 'delhi', name: 'Delhi NCR (South Delhi)', lat: 28.5355, lng: 77.2090 },
   { id: 'hyderabad', name: 'Hyderabad (Hitec City)', lat: 17.4435, lng: 78.3772 },
   { id: 'pune', name: 'Pune (Koregaon Park)', lat: 18.5362, lng: 73.8940 }
 ];
 
+const TILE_LAYERS = {
+  roadmap: {
+    name: 'Google Roadmap',
+    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps'
+  },
+  satellite: {
+    name: 'Satellite View',
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps Satellite'
+  },
+  voyager: {
+    name: 'Clean Medical',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; CARTO &copy; OpenStreetMap'
+  }
+};
+
 export default function NearbyCare({ report }) {
-  // User Location State (Initializes with report coordinates or default Kumaraswamy Layout)
+  // Direct DOM ref for pure Leaflet map container (100% immune to React 19 StrictMode crashes)
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const tileLayerRef = useRef(null);
+  const markersGroupRef = useRef(null);
+  const routeLineRef = useRef(null);
+  const userBeaconRef = useRef(null);
+  const accuracyCircleRef = useRef(null);
+
+  // User Location State (Initializes directly at Kumaraswamy Layout / Kanakapura Rd from user's screen)
   const [userLocation, setUserLocation] = useState(() => {
     if (report?.coordinates?.lat && report?.coordinates?.lng) {
       return {
@@ -330,97 +330,27 @@ export default function NearbyCare({ report }) {
         lng: report.coordinates.lng,
         accuracy: 15,
         detected: true,
-        label: `Incident Location (${report.location || report.id})`
+        label: `Logged Location (${report.location || report.id})`
       };
     }
     return {
       lat: 12.9060,
       lng: 77.5610,
       accuracy: 25,
-      detected: false,
+      detected: true,
       label: 'Kumaraswamy Layout, Bengaluru'
     };
   });
 
   const [isLocating, setIsLocating] = useState(false);
-  const [gpsNotice, setGpsNotice] = useState('Click "Locate My Position" or choose an area to center.');
+  const [gpsNotice, setGpsNotice] = useState('Location active: Kumaraswamy Layout, Bengaluru');
   const [selectedFacilityId, setSelectedFacilityId] = useState(ALL_FACILITIES[0].id);
-  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'emergency', 'hospital', 'ngo', 'daycare'
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [mapTargetCenter, setMapTargetCenter] = useState(null);
+  const [activeTileType, setActiveTileType] = useState('roadmap');
+  const [mapError, setMapError] = useState(null);
 
-  // Auto-detect Geolocation on user gesture or mount
-  const detectUserGPS = useCallback((isManual = false) => {
-    if (!navigator.geolocation) {
-      setGpsNotice('Location services not available on this browser.');
-      return;
-    }
-
-    setIsLocating(true);
-    setGpsNotice('Connecting to satellite GPS & local network…');
-
-    // Strategy: Fast scan first for rapid response on laptops/desktops
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(5));
-        const lng = Number(pos.coords.longitude.toFixed(5));
-        const accuracy = Math.round(pos.coords.accuracy || 20);
-
-        setUserLocation({
-          lat,
-          lng,
-          accuracy,
-          detected: true,
-          label: isManual ? 'Live GPS Location' : 'Current Location'
-        });
-        setMapTargetCenter([lat, lng]);
-        setIsLocating(false);
-        setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m accuracy)`);
-      },
-      (err) => {
-        console.warn('[NearbyCare] Standard GPS error, trying high accuracy:', err.message);
-
-        // Fallback to high accuracy
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = Number(pos.coords.latitude.toFixed(5));
-            const lng = Number(pos.coords.longitude.toFixed(5));
-            const accuracy = Math.round(pos.coords.accuracy || 20);
-
-            setUserLocation({
-              lat,
-              lng,
-              accuracy,
-              detected: true,
-              label: 'Live GPS Location'
-            });
-            setMapTargetCenter([lat, lng]);
-            setIsLocating(false);
-            setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m)`);
-          },
-          (err2) => {
-            setIsLocating(false);
-            console.warn('[NearbyCare] High-accuracy GPS denied or timed out:', err2.message);
-            setGpsNotice('Location access pending or declined. Tap "Locate My Position" or pick an area.');
-          },
-          { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
-        );
-      },
-      { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
-    );
-  }, []);
-
-  // Initial prompt for GPS detection without blocking initial render
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (typeof window !== 'undefined' && navigator.geolocation) {
-        detectUserGPS(false);
-      }
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [detectUserGPS]);
-
-  // Compute live distance and drive times for all facilities from user location
+  // Compute live distances for all facilities from user location
   const facilitiesWithDistance = useMemo(() => {
     return ALL_FACILITIES.map((facility) => {
       const distanceKm = calculateDistanceKm(
@@ -429,7 +359,6 @@ export default function NearbyCare({ report }) {
         facility.coordinates.lat,
         facility.coordinates.lng
       );
-      // Average city drive speed ~22 km/h
       const driveMinutes = Math.max(3, Math.round((distanceKm / 22) * 60));
       return {
         ...facility,
@@ -466,33 +395,261 @@ export default function NearbyCare({ report }) {
     );
   }, [filteredFacilities, facilitiesWithDistance, selectedFacilityId]);
 
-  // Driving route polyline waypoints from user location to selected facility
-  const routePolyline = useMemo(() => {
-    if (!selectedFacility) return [];
-    const uLat = userLocation.lat;
-    const uLng = userLocation.lng;
-    const dLat = selectedFacility.coordinates.lat;
-    const dLng = selectedFacility.coordinates.lng;
-
-    // Curved realistic route path
-    return [
-      [uLat, uLng],
-      [(uLat * 2 + dLat) / 3, (uLng * 2 + dLng) / 3 + 0.003],
-      [(uLat + dLat * 2) / 3, (uLng + dLng * 2) / 3 - 0.002],
-      [dLat, dLng]
-    ];
-  }, [userLocation.lat, userLocation.lng, selectedFacility]);
-
   // Turn-by-turn navigation URL in Google Maps
-  const getDirectionsUrl = (destLat, destLng) => {
+  const getDirectionsUrl = useCallback((destLat, destLng) => {
     const originParam = `${userLocation.lat},${userLocation.lng}`;
     return `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destLat},${destLng}&travelmode=driving`;
-  };
+  }, [userLocation.lat, userLocation.lng]);
 
-  const handleSelectFacility = (facility) => {
+  const handleSelectFacility = useCallback((facility) => {
     setSelectedFacilityId(facility.id);
-    setMapTargetCenter([facility.coordinates.lat, facility.coordinates.lng]);
-  };
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([facility.coordinates.lat, facility.coordinates.lng], 14, {
+        duration: 1.0
+      });
+    }
+  }, []);
+
+  // 1. Initialize Leaflet Map Instance cleanly on mount (immune to React 19 StrictMode double-mounting)
+  const initialCenterRef = useRef([userLocation.lat, userLocation.lng]);
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return undefined;
+
+    // Clean any residual leaflet container ID to guarantee zero "already initialized" errors
+    if (mapContainerRef.current._leaflet_id) {
+      delete mapContainerRef.current._leaflet_id;
+    }
+
+    try {
+      const map = L.map(mapContainerRef.current, {
+        center: initialCenterRef.current,
+        zoom: 13,
+        scrollWheelZoom: false,
+        zoomControl: true
+      });
+
+      // Google Roadmap tile layer (works 100% reliably in India and globally)
+      const tileConfig = TILE_LAYERS.roadmap;
+      tileLayerRef.current = L.tileLayer(tileConfig.url, {
+        maxZoom: 20,
+        attribution: tileConfig.attribution
+      }).addTo(map);
+
+      // Feature group for markers
+      markersGroupRef.current = L.featureGroup().addTo(map);
+      mapInstanceRef.current = map;
+
+      // Invalidate container size across multiple ticks to eliminate any grey tile edges
+      setTimeout(() => map.invalidateSize(), 60);
+      setTimeout(() => map.invalidateSize(), 200);
+      setTimeout(() => map.invalidateSize(), 500);
+      setTimeout(() => map.invalidateSize(), 1000);
+    } catch (err) {
+      console.error('[NearbyCare] Leaflet initialization error:', err);
+      setTimeout(() => {
+        setMapError(err.message || 'Could not initialize map');
+      }, 0);
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // 2. Switch Tile Layer dynamically when activeTileType changes
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const tileConfig = TILE_LAYERS[activeTileType] || TILE_LAYERS.roadmap;
+
+    if (tileLayerRef.current) {
+      tileLayerRef.current.remove();
+    }
+    tileLayerRef.current = L.tileLayer(tileConfig.url, {
+      maxZoom: 20,
+      attribution: tileConfig.attribution
+    }).addTo(map);
+  }, [activeTileType]);
+
+  // 3. Update User Live Location Beacon on map
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (userBeaconRef.current) {
+      userBeaconRef.current.remove();
+    }
+    if (accuracyCircleRef.current) {
+      accuracyCircleRef.current.remove();
+    }
+
+    // Accuracy Circle
+    accuracyCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
+      radius: Math.max(60, userLocation.accuracy || 25),
+      color: '#0284c7',
+      fillColor: '#38bdf8',
+      fillOpacity: 0.12,
+      weight: 1.5
+    }).addTo(map);
+
+    // User Radar Marker
+    userBeaconRef.current = L.marker([userLocation.lat, userLocation.lng], {
+      icon: createUserMarkerIcon(),
+      zIndexOffset: 1000
+    }).addTo(map);
+
+    userBeaconRef.current.bindPopup(`
+      <div style="text-align: center; padding: 4px; font-family: inherit;">
+        <strong style="color: #0284c7; font-size: 13.5px; display: block; margin-bottom: 2px;">Your Current Location</strong>
+        <span style="font-size: 12px; color: #475569; display: block;">${userLocation.label}</span>
+        <span style="font-size: 11px; color: #94a3b8;">${userLocation.lat.toFixed(4)}° N, ${userLocation.lng.toFixed(4)}° E</span>
+      </div>
+    `);
+  }, [userLocation]);
+
+  // 4. Update Facility Markers & Popups when filteredFacilities or selectedFacilityId changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markersGroupRef.current) return;
+    markersGroupRef.current.clearLayers();
+
+    filteredFacilities.forEach((facility) => {
+      const isSelected = facility.id === selectedFacilityId;
+      const marker = L.marker([facility.coordinates.lat, facility.coordinates.lng], {
+        icon: createFacilityMarkerIcon(facility.type, isSelected)
+      });
+
+      marker.bindPopup(`
+        <div style="max-width: 260px; padding: 4px; font-family: inherit;">
+          <span style="display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: ${facility.type === 'emergency' ? '#fee2e2' : '#ecfdf5'}; color: ${facility.type === 'emergency' ? '#991b1b' : '#065f46'}; margin-bottom: 4px;">
+            ${facility.categoryLabel}
+          </span>
+          <strong style="display: block; font-size: 14px; color: #0f172a; margin: 2px 0 4px; line-height: 1.3;">
+            ${facility.name}
+          </strong>
+          <div style="font-size: 12px; color: #0d9488; font-weight: 700; margin-bottom: 6px;">
+            📍 ${facility.distanceKm} km away • ~${facility.driveMinutes} min drive
+          </div>
+          <p style="font-size: 11.5px; color: #64748b; margin: 0 0 8px; line-height: 1.35;">
+            ${facility.address}
+          </p>
+          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${facility.coordinates.lat},${facility.coordinates.lng}&travelmode=driving"
+            target="_blank" rel="noopener noreferrer"
+            style="display: block; text-align: center; background: #0d9488; color: #ffffff; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">
+            Navigate with Google Maps
+          </a>
+        </div>
+      `);
+
+      marker.on('click', () => {
+        handleSelectFacility(facility);
+      });
+
+      markersGroupRef.current.addLayer(marker);
+    });
+  }, [filteredFacilities, selectedFacilityId, userLocation.lat, userLocation.lng, handleSelectFacility]);
+
+  // 5. Draw active curved driving polyline from user location to selected facility
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (routeLineRef.current) {
+      routeLineRef.current.remove();
+      routeLineRef.current = null;
+    }
+
+    if (selectedFacility) {
+      const uLat = userLocation.lat;
+      const uLng = userLocation.lng;
+      const dLat = selectedFacility.coordinates.lat;
+      const dLng = selectedFacility.coordinates.lng;
+
+      const waypoints = [
+        [uLat, uLng],
+        [(uLat * 2 + dLat) / 3, (uLng * 2 + dLng) / 3 + 0.003],
+        [(uLat + dLat * 2) / 3, (uLng + dLng * 2) / 3 - 0.002],
+        [dLat, dLng]
+      ];
+
+      routeLineRef.current = L.polyline(waypoints, {
+        color: '#0d9488',
+        weight: 4,
+        dashArray: '8, 8',
+        opacity: 0.9
+      }).addTo(map);
+    }
+  }, [userLocation, selectedFacility]);
+
+  // Geolocation trigger
+  const detectUserGPS = useCallback((isManual = false) => {
+    if (!navigator.geolocation) {
+      setGpsNotice('Location services not available on this browser.');
+      return;
+    }
+
+    setIsLocating(true);
+    setGpsNotice('Acquiring high-precision GPS satellite fix…');
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(5));
+        const lng = Number(pos.coords.longitude.toFixed(5));
+        const accuracy = Math.round(pos.coords.accuracy || 20);
+
+        setUserLocation({
+          lat,
+          lng,
+          accuracy,
+          detected: true,
+          label: isManual ? 'Live GPS Location' : 'Current Location'
+        });
+
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
+        }
+
+        setIsLocating(false);
+        setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m precision)`);
+      },
+      (err) => {
+        console.warn('[NearbyCare] Standard GPS error, trying high accuracy:', err.message);
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = Number(pos.coords.latitude.toFixed(5));
+            const lng = Number(pos.coords.longitude.toFixed(5));
+            const accuracy = Math.round(pos.coords.accuracy || 20);
+
+            setUserLocation({
+              lat,
+              lng,
+              accuracy,
+              detected: true,
+              label: 'Live GPS Location'
+            });
+
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
+            }
+
+            setIsLocating(false);
+            setGpsNotice(`GPS Locked: ${lat}° N, ${lng}° E (±${accuracy}m)`);
+          },
+          (err2) => {
+            setIsLocating(false);
+            console.warn('[NearbyCare] GPS permission denied or timed out:', err2.message);
+            setGpsNotice('Location defaulted to Kumaraswamy Layout. Click "Locate My Position" or select a region.');
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+        );
+      },
+      { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+    );
+  }, []);
 
   const handlePresetMetroChange = (e) => {
     const metro = PRESET_METROS.find((m) => m.id === e.target.value);
@@ -504,7 +661,10 @@ export default function NearbyCare({ report }) {
         detected: true,
         label: metro.name
       });
-      setMapTargetCenter([metro.lat, metro.lng]);
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([metro.lat, metro.lng], 13, { duration: 1.2 });
+      }
       setGpsNotice(`Centered on ${metro.name}`);
     }
   };
@@ -524,7 +684,7 @@ export default function NearbyCare({ report }) {
         </p>
       </header>
 
-      {/* Modern Control Bar: GPS Status, Locate Me Button, City Selector & Search */}
+      {/* Control Bar: GPS Status, Locate Me Button, City Selector & Search */}
       <div className="panel nearby-control-bar" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 16px -4px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           {/* Live GPS Beacon Readout */}
@@ -679,141 +839,69 @@ export default function NearbyCare({ report }) {
         
         {/* Left Column: Interactive Map */}
         <div className="panel" style={{ padding: 0, overflow: 'hidden', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'sticky', top: '80px', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.08)' }}>
-          {/* Map Top Bar */}
-          <div style={{ padding: '12px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px', color: '#475569' }}>
+          {/* Map Top Bar with Layer Switcher */}
+          <div style={{ padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '12.5px', color: '#475569' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }} />
               <span>Blue Beacon: <strong>Your Location</strong></span>
             </div>
-            {selectedFacility && (
-              <span style={{ color: '#0f766e', fontWeight: 600 }}>
-                Route Active: <strong>{selectedFacility.distanceKm} km ({selectedFacility.driveMinutes}m drive)</strong>
-              </span>
-            )}
+
+            {/* Tile Layer Selector */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {Object.entries(TILE_LAYERS).map(([key, layer]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveTileType(key)}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: activeTileType === key ? '#0d9488' : '#e2e8f0',
+                    background: activeTileType === key ? '#0d9488' : '#ffffff',
+                    color: activeTileType === key ? '#ffffff' : '#64748b',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {layer.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Leaflet Map Frame */}
+          {/* Leaflet Map DOM Element Container */}
           <div style={{ height: '540px', width: '100%', position: 'relative' }}>
-            <MapContainer
-              center={[userLocation.lat, userLocation.lng]}
-              zoom={13}
-              scrollWheelZoom={false}
+            {mapError && (
+              <div style={{ position: 'absolute', inset: 0, background: '#f8fafc', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
+                <ShieldAlert size={36} color="#dc2626" style={{ marginBottom: '12px' }} />
+                <strong style={{ color: '#0f172a', fontSize: '15px' }}>Map tile network encountered an issue</strong>
+                <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 16px' }}>{mapError}</p>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={() => window.location.reload()}
+                  style={{ minHeight: '38px', padding: '6px 14px', fontSize: '13px' }}
+                >
+                  <RefreshCw size={14} /> Reload Map
+                </button>
+              </div>
+            )}
+
+            <div
+              ref={mapContainerRef}
+              id="nearby-care-leaflet-map"
               style={{ width: '100%', height: '100%' }}
-            >
-              <MapResizer activeTab={categoryFilter} />
-              <MapViewController center={mapTargetCenter} zoom={13} />
-
-              {/* CartoDB Voyager Modern Clean Medical Style Tiles */}
-              <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                maxZoom={19}
-              />
-
-              {/* Accuracy circle around user location */}
-              {userLocation.accuracy && (
-                <Circle
-                  center={[userLocation.lat, userLocation.lng]}
-                  radius={Math.max(60, userLocation.accuracy)}
-                  pathOptions={{
-                    color: '#0284c7',
-                    fillColor: '#38bdf8',
-                    fillOpacity: 0.12,
-                    weight: 1
-                  }}
-                />
-              )}
-
-              {/* Pulsing User Current Location Marker */}
-              <Marker
-                position={[userLocation.lat, userLocation.lng]}
-                icon={createUserMarkerIcon()}
-              >
-                <Popup>
-                  <div style={{ padding: '4px', textAlign: 'center' }}>
-                    <strong style={{ color: '#0284c7', fontSize: '14px', display: 'block' }}>Your Current Location</strong>
-                    <span style={{ fontSize: '12px', color: '#475569' }}>
-                      {userLocation.lat.toFixed(4)}° N, {userLocation.lng.toFixed(4)}° E
-                    </span>
-                  </div>
-                </Popup>
-              </Marker>
-
-              {/* Driving Route Polyline from User to Selected Facility */}
-              {routePolyline.length > 0 && (
-                <Polyline
-                  positions={routePolyline}
-                  pathOptions={{
-                    color: '#0d9488',
-                    weight: 4,
-                    dashArray: '8, 8',
-                    opacity: 0.85
-                  }}
-                />
-              )}
-
-              {/* Facility Markers */}
-              {filteredFacilities.map((facility) => {
-                const isSelected = facility.id === selectedFacilityId;
-                return (
-                  <Marker
-                    key={facility.id}
-                    position={[facility.coordinates.lat, facility.coordinates.lng]}
-                    icon={createFacilityMarkerIcon(facility.type, isSelected)}
-                    eventHandlers={{
-                      click: () => handleSelectFacility(facility)
-                    }}
-                  >
-                    <Popup>
-                      <div style={{ maxWidth: '240px', padding: '4px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: facility.type === 'emergency' ? '#fee2e2' : '#ecfdf5',
-                          color: facility.type === 'emergency' ? '#991b1b' : '#065f46',
-                          marginBottom: '4px'
-                        }}>
-                          {facility.categoryLabel}
-                        </span>
-                        <strong style={{ display: 'block', fontSize: '13.5px', color: '#0f172a', margin: '2px 0 4px' }}>
-                          {facility.name}
-                        </strong>
-                        <div style={{ fontSize: '12px', color: '#0d9488', fontWeight: 700, marginBottom: '6px' }}>
-                          📍 {facility.distanceKm} km away • {facility.driveMinutes} min drive
-                        </div>
-                        <a
-                          href={getDirectionsUrl(facility.coordinates.lat, facility.coordinates.lng)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'block',
-                            textAlign: 'center',
-                            background: '#0d9488',
-                            color: '#ffffff',
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            textDecoration: 'none'
-                          }}
-                        >
-                          Navigate with Google Maps
-                        </a>
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </MapContainer>
+            />
 
             {/* Floating Quick Action: Center on My Location */}
             <button
               type="button"
               onClick={() => {
-                setMapTargetCenter([userLocation.lat, userLocation.lng]);
+                if (mapInstanceRef.current) {
+                  mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 1 });
+                }
               }}
               title="Center map on your location"
               style={{

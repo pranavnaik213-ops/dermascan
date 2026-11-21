@@ -954,3 +954,31 @@ input[type="submit"],
     position: static !important;
   }
 }
+
+
+/* Ensure Leaflet container fills 100% and div icons are transparent */
+#nearby-care-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.leaflet-container {
+  font-family: 'Plus Jakarta Sans', Inter, -apple-system, sans-serif !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #e2e8f0 !important;
+}
+
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  padding: 4px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+}
